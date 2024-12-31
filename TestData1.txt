@@ -152,3 +152,101 @@ class Program
 
 https://learn-attachment.microsoft.com/api/attachments/73157-1.png?platform=QnA
 
+
+
+
+
+
+
+
+DECLARE @HTMLBody NVARCHAR(MAX);
+
+-- Query to generate HTML table
+SET @HTMLBody = 
+N'<html>
+<head>
+<style>
+    table {
+        border-collapse: collapse;
+        width: 100%;
+    }
+    th, td {
+        border: 1px solid black;
+        padding: 8px;
+        text-align: left;
+    }
+    th {
+        background-color: #f2f2f2;
+    }
+    .active {
+        background-color: #d4edda;
+    }
+    .inactive {
+        background-color: #f8d7da;
+    }
+</style>
+</head>
+<body>
+<h3>SQL Data Report</h3>
+<table>
+    <thead>
+        <tr>
+            <th>ID</th>
+            <th>Name</th>
+            <th>Category</th>
+            <th>Status</th>
+        </tr>
+    </thead>
+    <tbody>'
+
+-- Generate table rows
+SELECT @HTMLBody += 
+N'<tr' + 
+    CASE 
+        WHEN Status = 'Active' THEN ' class="active"'
+        WHEN Status = 'Inactive' THEN ' class="inactive"'
+        ELSE '' 
+    END + 
+N'><td>' + CAST(ID AS NVARCHAR) + 
+N'</td><td>' + Name + 
+N'</td><td>' + Category + 
+N'</td><td>' + Status + 
+N'</td></tr>'
+FROM YourTable;
+
+-- Close the table
+SET @HTMLBody += 
+N'</tbody>
+</table>
+</body>
+</html>'
+
+-- Send Email
+EXEC msdb.dbo.sp_send_dbmail
+    @profile_name = 'YourMailProfile',
+    @recipients = 'recipient@example.com',
+    @subject = 'SQL Data Report',
+    @body = @HTMLBody,
+    @body_format = 'HTML';
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
