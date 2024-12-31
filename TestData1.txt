@@ -297,6 +297,100 @@ EXEC msdb.dbo.sp_send_dbmail
 
 
 
+***********************
+
+
+-- Step 1: Create a temporary table to store the data from the text file
+CREATE TABLE #TempTable (
+    Column1 VARCHAR(255),
+    Column2 VARCHAR(255),
+    Column3 VARCHAR(255), -- 3rd column you want
+    Column4 VARCHAR(255)
+);
+
+-- Step 2: Bulk Insert data from the text file into the temporary table
+BULK INSERT #TempTable
+FROM 'C:\path\to\your\file.txt'
+WITH (
+    FIELDTERMINATOR = ',',  -- Change to the actual delimiter in your file
+    ROWTERMINATOR = '\n',  -- Adjust this if needed (e.g., for Windows it's '\r\n')
+    FIRSTROW = 2  -- Assuming the first row is a header
+);
+
+-- Step 3: Compare Table A with the 3rd column from the Temp Table
+-- Find missing records from TableA (records in TableA but not in TempTable)
+SELECT A.Column3
+FROM TableA A
+LEFT JOIN #TempTable Temp ON A.Column3 = Temp.Column3
+WHERE Temp.Column3 IS NULL;  -- Missing records from TempTable
+
+-- Step 4: Prepare the missing records email body
+DECLARE @MissingRecords NVARCHAR(MAX);
+DECLARE @EmailBody NVARCHAR(MAX);
+
+-- Collect missing records into a string
+SELECT @MissingRecords = STRING_AGG(A.Column3, ', ') 
+FROM TableA A
+LEFT JOIN #TempTable Temp ON A.Column3 = Temp.Column3
+WHERE Temp.Column3 IS NULL;
+
+-- Construct the HTML email body with better description and formatting
+SET @EmailBody = '
+    <html>
+        <head>
+            <style>
+                body { font-family: Arial, sans-serif; font-size: 12px; color: #333; }
+                table { border-collapse: collapse; width: 100%; margin-top: 20px; }
+                th, td { padding: 8px; text-align: left; border: 1px solid #ddd; }
+                th { background-color: #f2f2f2; color: #333; }
+                h2 { color: #0073e6; }
+                .content { margin-bottom: 20px; }
+            </style>
+        </head>
+        <body>
+            <h2>Missing Records from Table A</h2>
+            <p class="content">
+                Dear Team,
+            </p>
+            <p class="content">
+                Please find below the list of records from <b>Table A</b> that are missing in the temporary table (<b>#TempTable</b>). These records need further review or may require data insertion into the temporary table for processing.
+            </p>
+            <table>
+                <tr>
+                    <th>Missing Record(s)</th>
+                </tr>';
+
+-- Add each missing record as a row in the table
+SET @EmailBody = @EmailBody + 
+    (SELECT STRING_AGG('<tr><td>' + Column3 + '</td></tr>', '') 
+     FROM TableA A
+     LEFT JOIN #TempTable Temp ON A.Column3 = Temp.Column3
+     WHERE Temp.Column3 IS NULL);
+
+-- Add closing HTML tags
+SET @EmailBody = @EmailBody + '
+            </table>
+            <p class="content">
+                Kindly review and take the necessary actions to ensure data consistency.
+            </p>
+            <p class="content">
+                Best regards,<br/>
+                [Your Name or Your Team Name]<br/>
+                [Your Contact Information or Department Name]
+            </p>
+        </body>
+    </html>';
+
+-- Step 5: Send email with the missing records list (HTML formatted)
+EXEC msdb.dbo.sp_send_dbmail
+    @profile_name = 'YourMailProfile',  -- Make sure to configure Database Mail first
+    @recipients = 'someone@example.com',
+    @subject = 'Missing Records in Temp Table',
+    @body = @EmailBody,
+    @body_format = 'HTML';  -- This ensures the email is sent as HTML
+
+-- Step 6: Clean up
+DROP TABLE #TempTable;
 
 
 
