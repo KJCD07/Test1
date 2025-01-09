@@ -562,4 +562,139 @@ PRINT 'File processed successfully: ' + @SelectedFile;
 **************************
 
 
+-- Enable xp_cmdshell if not already enabled
+EXEC sp_configure 'show advanced options', 1;
+RECONFIGURE;
+EXEC sp_configure 'xp_cmdshell', 1;
+RECONFIGURE;
+
+-- Variables
+DECLARE @FolderPath NVARCHAR(255) = 'C:\ArchiveFolder\'; -- Set your folder path here
+DECLARE @Command NVARCHAR(500);
+DECLARE @Files TABLE (
+    FileName NVARCHAR(255)
+);
+DECLARE @FileDetails TABLE (
+    FileName NVARCHAR(255),
+    FileDate DATETIME
+);
+DECLARE @CurrentDate DATE = CAST(GETDATE() AS DATE);
+DECLARE @SelectedFile NVARCHAR(255);
+DECLARE @FullFilePath NVARCHAR(500);
+DECLARE @SQL NVARCHAR(MAX);
+
+-- Get the list of files in the folder
+SET @Command = 'DIR "' + @FolderPath + '" /T:W /A:-D /B'; -- Get file names in bare format
+INSERT INTO @Files (FileName)
+EXEC xp_cmdshell @Command;
+
+-- Remove NULL or system messages from the output
+DELETE FROM @Files WHERE FileName IS NULL OR FileName = '';
+
+-- Loop through files to get their modification dates
+DECLARE @FileName NVARCHAR(255);
+DECLARE cur CURSOR FOR SELECT FileName FROM @Files;
+OPEN cur;
+
+FETCH NEXT FROM cur INTO @FileName;
+
+WHILE @@FETCH_STATUS = 0
+BEGIN
+    -- Get detailed file information
+    SET @Command = 'DIR "' + @FolderPath + @FileName + '" /T:W';
+    DECLARE @FileInfo TABLE (Line NVARCHAR(MAX));
+    INSERT INTO @FileInfo (Line)
+    EXEC xp_cmdshell @Command;
+
+    -- Parse the file modification date
+    DECLARE @FileDate DATETIME;
+    SELECT TOP 1 
+        @FileDate = TRY_CONVERT(DATETIME, SUBSTRING(Line, 1, 20)) -- Extract date from the first part of the DIR output
+    FROM @FileInfo
+    WHERE Line LIKE '% AM%' OR Line LIKE '% PM%';
+
+    -- Add file details to the FileDetails table
+    IF @FileDate IS NOT NULL
+        INSERT INTO @FileDetails (FileName, FileDate)
+        VALUES (@FileName, @FileDate);
+
+    FETCH NEXT FROM cur INTO @FileName;
+END
+
+CLOSE cur;
+DEALLOCATE cur;
+
+-- Select the file with today's date
+SELECT TOP 1 @SelectedFile = FileName
+FROM @FileDetails
+WHERE CAST(FileDate AS DATE) = @CurrentDate;
+
+IF @SelectedFile IS NULL
+BEGIN
+    PRINT 'No file found for today''s date.';
+    RETURN;
+END
+
+-- Full file path
+SET @FullFilePath = @FolderPath + @SelectedFile;
+
+-- Create a staging table for the file's data
+IF OBJECT_ID('tempdb..#StagingTable') IS NOT NULL
+    DROP TABLE #StagingTable;
+
+CREATE TABLE #StagingTable (
+    Column1 NVARCHAR(50),
+    Column2 NVARCHAR(50),
+    Column3 NVARCHAR(50)
+    -- Add more columns as needed
+);
+
+-- Load data from the file into the staging table
+SET @SQL = CONCAT(
+    'BULK INSERT #StagingTable ',
+    'FROM ''', @FullFilePath, ''' ',
+    'WITH (FIRSTROW = 2, FIELDTERMINATOR = '','', ROWTERMINATOR = ''\n'');'
+);
+
+EXEC sp_executesql @SQL;
+
+-- Process the data (e.g., insert into the main table)
+INSERT INTO YourMainTable (Column1, Column2, Column3)
+SELECT Column1, Column2, Column3
+FROM #StagingTable;
+
+-- Clean up
+DROP TABLE #StagingTable;
+
+PRINT 'File processed successfully: ' + @SelectedFile;
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
