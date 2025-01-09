@@ -82,3 +82,122 @@ FROM #StagingTable;
 DROP TABLE #StagingTable;
 
 PRINT 'File processed successfully: ' + @SelectedFile;
+
+
+
+
+
+
+*************************************************************************************************
+
+
+-- Enable xp_cmdshell if not already enabled
+EXEC sp_configure 'show advanced options', 1;
+RECONFIGURE;
+EXEC sp_configure 'xp_cmdshell', 1;
+RECONFIGURE;
+
+-- Variables
+DECLARE @FolderPath NVARCHAR(255) = 'C:\FileFolder\'; -- Set your folder path here
+DECLARE @FileName NVARCHAR(255);
+DECLARE @FullFilePath NVARCHAR(500);
+DECLARE @Command NVARCHAR(500);
+DECLARE @FileExists INT;
+DECLARE @SQL NVARCHAR(MAX);
+
+-- Table to hold validation results
+IF OBJECT_ID('tempdb..#ValidationResults') IS NOT NULL
+    DROP TABLE #ValidationResults;
+
+CREATE TABLE #ValidationResults (
+    FileName NVARCHAR(255),
+    Status NVARCHAR(50) -- Valid, Invalid, Not Found
+);
+
+-- Cursor to iterate through filenames in the table
+DECLARE file_cursor CURSOR FOR 
+SELECT FileName FROM FileTable; -- Replace with your table name
+
+OPEN file_cursor;
+FETCH NEXT FROM file_cursor INTO @FileName;
+
+WHILE @@FETCH_STATUS = 0
+BEGIN
+    -- Construct the full file path
+    SET @FullFilePath = @FolderPath + @FileName;
+
+    -- Check if the file exists
+    SET @Command = 'IF EXIST "' + @FullFilePath + '" (EXIT 0) ELSE (EXIT 1)';
+    EXEC @FileExists = xp_cmdshell @Command;
+
+    IF (@FileExists IS NOT NULL AND @FileExists = 0)
+    BEGIN
+        -- Check if the file contains valid data
+        BEGIN TRY
+            -- Use BULK INSERT to attempt loading the file into a temporary table
+            IF OBJECT_ID('tempdb..#TempFileData') IS NOT NULL
+                DROP TABLE #TempFileData;
+
+            CREATE TABLE #TempFileData (
+                Column1 NVARCHAR(255),
+                Column2 NVARCHAR(255),
+                Column3 NVARCHAR(255) -- Adjust columns as per your file structure
+            );
+
+            SET @SQL = CONCAT(
+                'BULK INSERT #TempFileData ',
+                'FROM ''', @FullFilePath, ''' ',
+                'WITH (FIRSTROW = 2, FIELDTERMINATOR = '','', ROWTERMINATOR = ''\n'');'
+            );
+
+            EXEC sp_executesql @SQL;
+
+            -- If rows are present, file is valid
+            IF EXISTS (SELECT 1 FROM #TempFileData)
+                INSERT INTO #ValidationResults (FileName, Status)
+                VALUES (@FileName, 'Valid');
+            ELSE
+                INSERT INTO #ValidationResults (FileName, Status)
+                VALUES (@FileName, 'Invalid');
+
+            -- Clean up temporary table
+            DROP TABLE #TempFileData;
+        END TRY
+        BEGIN CATCH
+            -- If BULK INSERT fails, mark file as Invalid
+            INSERT INTO #ValidationResults (FileName, Status)
+            VALUES (@FileName, 'Invalid');
+        END CATCH
+    END
+    ELSE
+    BEGIN
+        -- File not found
+        INSERT INTO #ValidationResults (FileName, Status)
+        VALUES (@FileName, 'Not Found');
+    END
+
+    -- Fetch the next file
+    FETCH NEXT FROM file_cursor INTO @FileName;
+END
+
+CLOSE file_cursor;
+DEALLOCATE file_cursor;
+
+-- Display results
+SELECT * FROM #ValidationResults;
+
+-- Clean up
+DROP TABLE #ValidationResults;
+
+
+
+*******************************************************************************
+
+
+
+
+
+
+
+
+
