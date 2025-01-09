@@ -198,6 +198,70 @@ DROP TABLE #ValidationResults;
 
 
 
+-- Enable xp_cmdshell if not already enabled
+EXEC sp_configure 'show advanced options', 1;
+RECONFIGURE;
+EXEC sp_configure 'xp_cmdshell', 1;
+RECONFIGURE;
+
+-- Variables
+DECLARE @FolderPath NVARCHAR(255) = 'C:\FileFolder\'; -- Set your folder path here
+DECLARE @FileName NVARCHAR(255);
+DECLARE @FullFilePath NVARCHAR(500);
+DECLARE @Command NVARCHAR(500);
+DECLARE @HDRExists INT;
+DECLARE @TRLExists INT;
+
+-- Table to store results
+IF OBJECT_ID('tempdb..#FileValidation') IS NOT NULL
+    DROP TABLE #FileValidation;
+
+CREATE TABLE #FileValidation (
+    FileName NVARCHAR(255),
+    HDRStatus NVARCHAR(50), -- Present or Not Found
+    TRLStatus NVARCHAR(50)  -- Present or Not Found
+);
+
+-- Cursor to iterate through filenames in the table
+DECLARE file_cursor CURSOR FOR 
+SELECT FileName FROM FileTable; -- Replace with your table name
+
+OPEN file_cursor;
+FETCH NEXT FROM file_cursor INTO @FileName;
+
+WHILE @@FETCH_STATUS = 0
+BEGIN
+    -- Construct the full file path
+    SET @FullFilePath = @FolderPath + @FileName;
+
+    -- Check if the file contains "HDR"
+    SET @Command = 'FINDSTR "HDR" "' + @FullFilePath + '"';
+    EXEC @HDRExists = xp_cmdshell @Command;
+
+    -- Check if the file contains "TRL"
+    SET @Command = 'FINDSTR "TRL" "' + @FullFilePath + '"';
+    EXEC @TRLExists = xp_cmdshell @Command;
+
+    -- Insert results into validation table
+    INSERT INTO #FileValidation (FileName, HDRStatus, TRLStatus)
+    VALUES (
+        @FileName,
+        CASE WHEN @HDRExists IS NOT NULL AND @HDRExists = 0 THEN 'Present' ELSE 'Not Found' END,
+        CASE WHEN @TRLExists IS NOT NULL AND @TRLExists = 0 THEN 'Present' ELSE 'Not Found' END
+    );
+
+    -- Fetch the next file
+    FETCH NEXT FROM file_cursor INTO @FileName;
+END
+
+CLOSE file_cursor;
+DEALLOCATE file_cursor;
+
+-- Display results
+SELECT * FROM #FileValidation;
+
+-- Clean up
+DROP TABLE #FileValidation;
 
 
 
