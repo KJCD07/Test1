@@ -403,3 +403,84 @@ DROP TABLE #TempTable;
 
 
 
+
+***********************
+
+
+
+-- Enable xp_cmdshell if not already enabled
+EXEC sp_configure 'show advanced options', 1;
+RECONFIGURE;
+EXEC sp_configure 'xp_cmdshell', 1;
+RECONFIGURE;
+
+-- Variables
+DECLARE @FolderPath NVARCHAR(255) = 'C:\DataFiles\Archive\'; -- Adjust folder path
+DECLARE @CurrentDate NVARCHAR(10) = CONVERT(VARCHAR(10), GETDATE(), 120); -- YYYY-MM-DD format
+DECLARE @Command NVARCHAR(4000);
+DECLARE @FileList TABLE (FileName NVARCHAR(255), LastModifiedDate DATETIME);
+
+-- Get the list of files in the folder with last modified date
+SET @Command = 'DIR "' + @FolderPath + '" /T:W /A:-D /O:D';
+INSERT INTO @FileList (FileName, LastModifiedDate)
+EXEC xp_cmdshell @Command;
+
+-- Filter the file modified on the current date
+DECLARE @CurrentFile NVARCHAR(255);
+SELECT TOP 1 @CurrentFile = FileName
+FROM @FileList
+WHERE CONVERT(VARCHAR(10), LastModifiedDate, 120) = @CurrentDate
+  AND FileName LIKE '%.csv';
+
+IF @CurrentFile IS NULL
+BEGIN
+    PRINT 'No file found for the current date.';
+    RETURN;
+END
+
+-- Full file path
+DECLARE @FullFilePath NVARCHAR(4000) = @FolderPath + @CurrentFile;
+
+-- Create a staging table for the file's data
+IF OBJECT_ID('tempdb..#StagingTable') IS NOT NULL
+    DROP TABLE #StagingTable;
+
+CREATE TABLE #StagingTable (
+    Column1 NVARCHAR(50),
+    Column2 NVARCHAR(50),
+    Column3 NVARCHAR(50)
+    -- Add more columns as needed
+);
+
+-- Load data from the file into the staging table
+DECLARE @SQL NVARCHAR(MAX);
+SET @SQL = CONCAT(
+    'BULK INSERT #StagingTable ',
+    'FROM ''', @FullFilePath, ''' ',
+    'WITH (FIRSTROW = 2, FIELDTERMINATOR = '','', ROWTERMINATOR = ''\n'');'
+);
+
+EXEC sp_executesql @SQL;
+
+-- Process the data (e.g., insert into the main table)
+INSERT INTO YourMainTable (Column1, Column2, Column3)
+SELECT Column1, Column2, Column3
+FROM #StagingTable;
+
+-- Clean up
+DROP TABLE #StagingTable;
+
+PRINT 'File processed successfully: ' + @FullFilePath;
+
+
+
+********************************
+
+
+
+
+
+
+
+
+
