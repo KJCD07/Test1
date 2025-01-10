@@ -347,6 +347,7 @@ PRINT 'Invalid files found. Email sent.';
 
 
 
+SET @Command = 'COPY "' + @SourcePath + @FileName + '" "' + @DestinationPath + '"';
 
 
 
