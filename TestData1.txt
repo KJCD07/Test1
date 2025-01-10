@@ -265,3 +265,103 @@ DROP TABLE #FileValidation;
 
 
 
+
+
+
+
+
+
+
+
+******************************************************************************************************************************
+
+
+
+-- Variables
+DECLARE @EmailBody NVARCHAR(MAX);
+DECLARE @Subject NVARCHAR(255);
+DECLARE @Recipient NVARCHAR(255) = 'enduser@example.com'; -- Replace with the actual recipient email
+DECLARE @ValidFileExists INT;
+
+-- Check if there are valid files in the table
+SET @ValidFileExists = CASE 
+    WHEN EXISTS (SELECT 1 FROM FileStatusTable WHERE Status = 'Valid') THEN 1
+    ELSE 0
+END;
+
+-- If there are no invalid files, send a different notification
+IF NOT EXISTS (SELECT 1 FROM FileStatusTable WHERE Status = 'Invalid')
+BEGIN
+    SET @Subject = 'File Status Report - No Invalid Files';
+    SET @EmailBody = '<html><body>';
+    SET @EmailBody = @EmailBody + '<h2>All files are valid</h2>';
+    SET @EmailBody = @EmailBody + '<p>No invalid files were found in the system.</p>';
+    SET @EmailBody = @EmailBody + '<p>Regards,<br>Your SQL System</p>';
+    SET @EmailBody = @EmailBody + '</body></html>';
+
+    -- Send email
+    EXEC msdb.dbo.sp_send_dbmail
+        @profile_name = 'YourDatabaseMailProfile', -- Replace with your Database Mail profile name
+        @recipients = @Recipient,
+        @subject = @Subject,
+        @body = @EmailBody,
+        @body_format = 'HTML';
+
+    PRINT 'No invalid files found. Email sent.';
+    RETURN; -- Exit the script since no invalid files are present
+END;
+
+-- If there are invalid files, build the email body
+SET @EmailBody = '<html><body>';
+SET @EmailBody = @EmailBody + '<h2>Invalid File Details</h2>';
+SET @EmailBody = @EmailBody + '<table border="1" cellpadding="5" cellspacing="0" style="border-collapse:collapse;">';
+SET @EmailBody = @EmailBody + '<tr><th>File Name</th><th>Status</th></tr>';
+
+-- Loop through invalid file details and append them to the email body
+SELECT @EmailBody = @EmailBody +
+    '<tr><td>' + FileName + '</td><td>' + Status + '</td></tr>'
+FROM FileStatusTable
+WHERE Status = 'Invalid';
+
+SET @EmailBody = @EmailBody + '</table>';
+SET @EmailBody = @EmailBody + '<p>Regards,<br>Your SQL System</p>';
+SET @EmailBody = @EmailBody + '</body></html>';
+
+-- Send the email for invalid files
+SET @Subject = 'File Status Report - Invalid Files';
+
+EXEC msdb.dbo.sp_send_dbmail
+    @profile_name = 'YourDatabaseMailProfile', -- Replace with your Database Mail profile name
+    @recipients = @Recipient,
+    @subject = @Subject,
+    @body = @EmailBody,
+    @body_format = 'HTML';
+
+PRINT 'Invalid files found. Email sent.';
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
