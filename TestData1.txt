@@ -385,6 +385,10 @@ SET @Command = 'FORFILES /P "C:\SourceFolder" /D 0 /C "CMD /C COPY @file C:\Dest
 
 
 
+SET @Command = 
+    'FORFILES /P "' + @SourceFolder + '" /D 0 /C "CMD /C COPY @file ' + @DestinationFolder + '"';
+
+
 
 
 
