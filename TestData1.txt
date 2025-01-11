@@ -6,3 +6,32 @@ SET @Command =
 
 SET @cmd = 
     'forfiles /P "c:\backup" /D +0 /C "cmd /c copy @path c:\shared"';
+
+
+
+
+
+-- Step 1: Create a temporary table to store file names
+CREATE TABLE #FileList (
+    FileName NVARCHAR(255)
+);
+
+-- Step 2: Use xp_cmdshell to list files modified today
+DECLARE @cmd NVARCHAR(MAX);
+DECLARE @FolderPath NVARCHAR(255) = 'C:\backup'; -- Change this to your folder path
+
+-- Command to list files modified today using forfiles
+SET @cmd = 'forfiles /P "' + @FolderPath + '" /D +0 /C "cmd /c echo @file"';
+
+-- Insert the output of the command into the temporary table
+INSERT INTO #FileList (FileName)
+EXEC xp_cmdshell @cmd;
+
+-- Step 3: Clean up null and irrelevant rows from the temporary table
+DELETE FROM #FileList WHERE FileName IS NULL OR FileName LIKE '%.';
+
+-- Step 4: View the filenames in the temporary table
+SELECT * FROM #FileList;
+
+-- Optional: Drop the temporary table after use
+-- DROP TABLE #FileList;
