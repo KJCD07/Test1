@@ -353,6 +353,29 @@ SET @Command = 'COPY "' + @SourcePath + @FileName + '" "' + @DestinationPath + '
 
 
 
+-- Enable xp_cmdshell if not already enabled
+EXEC sp_configure 'show advanced options', 1;
+RECONFIGURE;
+EXEC sp_configure 'xp_cmdshell', 1;
+RECONFIGURE;
+
+-- Variables
+DECLARE @SourceFolder NVARCHAR(255) = 'C:\SourceFolder\'; -- Source folder path
+DECLARE @DestinationFolder NVARCHAR(255) = 'C:\DestinationFolder\'; -- Destination folder path
+DECLARE @CurrentDate NVARCHAR(10) = CONVERT(VARCHAR(10), GETDATE(), 112); -- Current date in YYYYMMDD format
+DECLARE @Command NVARCHAR(MAX);
+
+-- Construct the command to copy files based on the current date
+SET @Command = 'ROBOCOPY "' + @SourceFolder + '" "' + @DestinationFolder + '" /MAXAGE:' + @CurrentDate + ' /S /NDL /NFL';
+
+-- Execute the command
+EXEC xp_cmdshell @Command;
+
+-- Check for errors
+IF @@ERROR <> 0
+    PRINT 'Error occurred while copying files.';
+ELSE
+    PRINT 'Files copied successfully.';
 
 
 
