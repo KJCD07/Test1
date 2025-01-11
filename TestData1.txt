@@ -390,6 +390,8 @@ SET @Command =
 
 
 
+SET @Command = 
+    'FORFILES /P "' + @SourceFolder + '" /D 0 /C "CMD /C COPY @path "' + @DestinationFolder + '\'"';
 
 
 
