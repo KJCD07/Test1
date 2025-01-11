@@ -395,4 +395,47 @@ SET @Command =
 
 
 
+-- Enable xp_cmdshell if not already enabled
+EXEC sp_configure 'show advanced options', 1;
+RECONFIGURE;
+EXEC sp_configure 'xp_cmdshell', 1;
+RECONFIGURE;
+
+-- Declare variables for UNC path and mapped drive letter
+DECLARE @UNCPath NVARCHAR(255) = '\\ServerName\SharedFolder'; -- UNC path of the source folder
+DECLARE @MappedDrive NVARCHAR(10) = 'Z:'; -- Drive letter to map the UNC path
+DECLARE @DestinationFolder NVARCHAR(255) = 'C:\DestinationFolder'; -- Destination folder path
+DECLARE @Command NVARCHAR(MAX);
+
+-- Map the UNC path to a drive letter
+SET @Command = 'NET USE ' + @MappedDrive + ' "' + @UNCPath + '"';
+EXEC xp_cmdshell @Command;
+
+-- Construct the FORFILES command to copy today's files
+SET @Command = 
+    'FORFILES /P "' + @MappedDrive + '" /D 0 /C "CMD /C COPY @path "' + @DestinationFolder + '\'"';
+
+-- Print the command for verification
+PRINT 'Executing Command: ' + @Command;
+
+-- Execute the FORFILES command
+BEGIN TRY
+    EXEC xp_cmdshell @Command;
+
+    -- If successful, print a success message
+    PRINT 'Files copied successfully.';
+END TRY
+BEGIN CATCH
+    -- Handle any errors that occur during execution
+    PRINT 'Error occurred while copying files.';
+    PRINT ERROR_MESSAGE();
+END CATCH;
+
+-- Unmap the drive letter after execution
+SET @Command = 'NET USE ' + @MappedDrive + ' /DELETE';
+EXEC xp_cmdshell @Command;
+
+-- Disable xp_cmdshell for security reasons (optional but recommended)
+EXEC sp_configure 'xp_cmdshell', 0;
+RECONFIGURE;
 
