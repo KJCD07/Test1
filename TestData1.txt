@@ -381,6 +381,7 @@ ELSE
 
 
 
+SET @Command = 'FORFILES /P "C:\SourceFolder" /D 0 /C "CMD /C COPY @file C:\DestinationFolder"';
 
 
 
