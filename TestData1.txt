@@ -1,3 +1,8 @@
 
 SET @Command = 
     'XCOPY "' + @SourceFolder + '" "' + @DestinationFolder + '" /D /Y';
+
+
+
+SET @cmd = 
+    'forfiles /P "c:\backup" /D +0 /C "cmd /c copy @path c:\shared"';
