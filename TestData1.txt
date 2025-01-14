@@ -94,7 +94,30 @@ FROM ParsedData;
 DROP TABLE StagingTable;
 
 
+***********************************************************************************************
+-- Insert the first three values into TargetTable
+INSERT INTO TargetTable (Col1, Col2, Col3)
+SELECT 
+    -- Extract the first value before the first "|"
+    LEFT(RawData, CHARINDEX('|', RawData + '|') - 1) AS Col1,
 
+    -- Extract the second value between the first and second "|"
+    CASE 
+        WHEN CHARINDEX('|', RawData + '|') > 0 THEN 
+            SUBSTRING(RawData, CHARINDEX('|', RawData + '|') + 1,
+                      CHARINDEX('|', RawData + '|', CHARINDEX('|', RawData + '|') + 1) - CHARINDEX('|', RawData + '|') - 1)
+        ELSE NULL
+    END AS Col2,
+
+    -- Extract the third value between the second and third "|"
+    CASE 
+        WHEN CHARINDEX('|', RawData + '|', CHARINDEX('|', RawData + '|') + 1) > 0 THEN
+            SUBSTRING(RawData, CHARINDEX('|', RawData + '|', CHARINDEX('|', RawData + '|') + 1) + 1,
+                      CHARINDEX('|', RawData + '|', CHARINDEX('|', RawData + '|', CHARINDEX('|', RawData + '|') + 1) + 1) 
+                      - CHARINDEX('|', RawData + '|', CHARINDEX('|', RawData + '|') + 1) - 1)
+        ELSE NULL
+    END AS Col3
+FROM SourceTable;
 
 
 
