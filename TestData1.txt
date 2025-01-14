@@ -129,6 +129,23 @@ FROM SourceTable;
 
 
 
+*******************************************************************
+
+-- Insert first 3 values into TargetTable
+INSERT INTO TargetTable (Col1, Col2, Col3)
+SELECT 
+    MAX(CASE WHEN RowNum = 1 THEN Value END) AS Col1,
+    MAX(CASE WHEN RowNum = 2 THEN Value END) AS Col2,
+    MAX(CASE WHEN RowNum = 3 THEN Value END) AS Col3
+FROM (
+    SELECT 
+        t.RawData,
+        s.value AS Value,
+        ROW_NUMBER() OVER (PARTITION BY t.RawData ORDER BY (SELECT NULL)) AS RowNum
+    FROM SourceTable t
+    CROSS APPLY STRING_SPLIT(t.RawData, '|') s
+) ExtractedData
+GROUP BY RawData;
 
 
 
