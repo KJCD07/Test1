@@ -35,3 +35,92 @@ SELECT * FROM #FileList;
 
 -- Optional: Drop the temporary table after use
 -- DROP TABLE #FileList;
+
+
+
+
+
+
+
+
+*****************************************************************************************************************
+
+
+-- Step 1: Create a staging table for raw data
+CREATE TABLE StagingTable (
+    RawLine NVARCHAR(MAX) -- Holds each line as raw text
+);
+
+-- Step 2: Bulk insert raw data into the staging table
+BULK INSERT StagingTable
+FROM 'C:\Path\To\Your\File.txt'
+WITH (
+    FIELDTERMINATOR = '\n', -- Rows are separated by newline
+    ROWTERMINATOR = '\n',
+    TABLOCK -- Speeds up bulk insert by locking the table
+);
+
+-- Step 3: Create the target table with 23 columns
+CREATE TABLE TargetTable (
+    Col1 NVARCHAR(255) NOT NULL,
+    Col2 NVARCHAR(255) NOT NULL,
+    Col3 NVARCHAR(255) NOT NULL,
+    -- Add placeholders for the remaining columns
+    Col4 NVARCHAR(255) NULL,
+    -- Continue up to Col23
+    Col23 NVARCHAR(255) NULL
+);
+
+-- Step 4: Extract first three values from the raw data and insert into the target table
+WITH ParsedData AS (
+    SELECT
+        -- Extract first delimiter-separated value
+        LEFT(RawLine, CHARINDEX('|', RawLine + '|') - 1) AS Col1,
+        -- Extract second value
+        SUBSTRING(RawLine, CHARINDEX('|', RawLine + '|') + 1,
+                  CHARINDEX('|', RawLine + '|', CHARINDEX('|', RawLine + '|') + 1)
+                  - CHARINDEX('|', RawLine + '|') - 1) AS Col2,
+        -- Extract third value
+        SUBSTRING(RawLine, CHARINDEX('|', RawLine + '|', CHARINDEX('|', RawLine + '|') + 1) + 1,
+                  CHARINDEX('|', RawLine + '|', CHARINDEX('|', RawLine + '|', CHARINDEX('|', RawLine + '|') + 1) + 1)
+                  - CHARINDEX('|', RawLine + '|', CHARINDEX('|', RawLine + '|') + 1) - 1) AS Col3
+    FROM StagingTable
+)
+INSERT INTO TargetTable (Col1, Col2, Col3)
+SELECT Col1, Col2, Col3
+FROM ParsedData;
+
+-- Step 5: Drop the staging table to free resources
+DROP TABLE StagingTable;
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
