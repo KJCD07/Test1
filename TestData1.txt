@@ -149,6 +149,25 @@ GROUP BY RawData;
 
 
 
+*************************************************
+
+
+
+DECLARE @FolderPath NVARCHAR(255) = 'C:\YourFolderPath'
+DECLARE @Command NVARCHAR(4000)
+DECLARE @Result INT
+
+-- Build command to check folder existence
+SET @Command = 'IF EXIST "' + @FolderPath + '" (EXIT 0) ELSE (EXIT 1)'
+
+-- Run the command and capture the result
+EXEC @Result = xp_cmdshell @Command, NO_OUTPUT
+
+-- Check if folder exists
+IF @Result = 0
+    PRINT 'Folder exists'
+ELSE
+    PRINT 'Folder does not exist'
 
 
 
