@@ -172,6 +172,64 @@ ELSE
 
 
 
+**********************************************************************
+
+
+
+SELECT 
+    ip.ARNG_ID AS ArngId,
+    a.ARNG_NO AS AccountNumber,
+    a.ARNG_TYP_CD AS ProductCode,
+    a.AccountName AS AccountName,
+    RTRIM(
+        COALESCE(p.FRST_NM, '') + ' ' + 
+        COALESCE(p.MID_NM, '') + ' ' + 
+        COALESCE(p.LST_NM, '') + ' ' + 
+        COALESCE(p.BUS_NM, '')
+    ) AS CustomerName,
+    a.ARNG_CO_CD AS CompanyNumber,
+    p.PTY_ID AS PartyId,
+    p.GCI_NO AS GCI,
+    a.NOTIC_DT AS NoticeDate,
+    a.RSTRC_DT AS RecommendedRestrictionDate,
+    a.SCHD_CLS_DT AS ScheduledClosureDate,
+    p.TAX_ID AS TaxId,
+    a.CLS_RSN_TX AS ClosureReason
+FROM ARNG_IP ip
+JOIN CSTS p 
+    ON ip.PTY_ID = p.PTY_ID
+JOIN ARNGS a 
+    ON ip.ARNG_ID = a.ARNG_ID
+WHERE 
+    ip.DEL_FL = 0 
+    AND p.DEL_FL = 0
+    AND a.DEL_FL = 0
+    AND ip.ARNG_STAT_ID IN (<PendingClosureStatus>, <ChargeOffStatus>) 
+    AND a.ACC_CLS_TEAM_PRCS_CLS_DT IS NOT NULL
+    AND a.ACC_CLS_DT IS NOT NULL
+    AND a.ARNG_TYP_CD = <ProductCode>
+    AND ip.PRMRY_ARNG_IP_FL = 1
+    AND ip.PRMRY_CAS_FL = 1
+    AND ip.CAS_DOM_ID = <DomainId>
+    AND NOT EXISTS (
+        SELECT 1 
+        FROM ProductQueueAction x
+        WHERE x.ArngId = a.ARNG_ID
+        AND x.Action IN (
+            <AccountClosureInProgress>,
+            <AssistanceRequired>,
+            <LetterMailRequested>,
+            <AccountRestrictionRequested>
+        )
+        AND x.IsDeleted = 0
+    )
+    AND EXISTS (
+        SELECT 1 
+        FROM subcodes x 
+        WHERE x.lob_grp = 'SMALL BUSINESS' 
+        AND x.ARNG_ID = a.ARNG_ID
+    )
+    AND a.NOTIC_DT IS NOT NULL;
 
 
 
