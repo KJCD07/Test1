@@ -232,6 +232,38 @@ WHERE
     AND a.NOTIC_DT IS NOT NULL;
 
 
+******************************************
+
+SELECT 
+    ip.ARNG_ID AS ArngId,
+    a.ARNG_NO AS AccountNumber,
+    a.ARNG_TYP_CD AS ProductCode,
+    a.AccountName AS AccountName,
+    CONCAT(p.FIRST_NM, ' ', p.LAST_NM) AS CustomerName,
+    a.ARNG_CO_CD AS CompanyNumber,
+    p.PTY_ID AS PartyId,
+    p.GCI AS GCI,
+    a.NOTC_DT AS NoticeDate,
+    a.RSTRC_DT AS RecommendedRestrictionDate,
+    a.SCHD_CLS_DT AS ScheduledClosureDate,
+    p.TAX_ID AS TaxId,
+    cls.RSN_TX AS ClosureReason
+FROM ARNG_TLP ip
+JOIN CSTS p ON ip.PTY_ID = p.PTY_ID
+JOIN ARNGS a ON ip.ARNG_ID = a.ARNG_ID
+WHERE ip.DELFL IS NOT NULL AND ip.DELFL = 1
+AND a.ARNG_STAT_ID = CAST(@ChargeOff AS INT)
+AND acc.CLS_ID IS NOT NULL AND acc.CLS_ID = 1
+AND EXISTS (
+    SELECT 1 
+    FROM ProductQueueAction pq 
+    WHERE pq.ARNG_ID = a.ARNG_ID
+)
+AND ip.PRRY_ARNG_TPL = 1
+AND ip.CAS_DOM_ID = @domainId 
+AND ip.PRRY_CAS_FL = 1
+AND a.ARNG_TYP_CD IN (@productCodeList)
+AND cls.RSN_TX IN (@clsqryList);
 
 
 
