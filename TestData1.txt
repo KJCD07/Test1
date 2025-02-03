@@ -26,3 +26,49 @@ WHERE
         )
         AND pq.IsDeleted = 0
     );
+***************************************************************************************************
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+Step-by-Step Process for ICM Ingestion
+Source File Archiving:
+
+Files that have been processed are moved to an archived folder. This is usually done to keep the working directory clean and store only the relevant, latest files for further processing.
+File Transfer:
+
+Files are copied from the web server’s archive folder to a specific folder located on the database server (DBServer). This transfer ensures that the files are in a secure and accessible location for the next steps in the process.
+Stored Procedure Execution:
+
+A stored procedure from the DBServer is triggered. This procedure accesses the raw files that have been copied from the web server’s archived folder. The procedure is responsible for initiating the processing of these files.
+File Selection for Processing:
+
+Only files that are dated with the current date are selected for processing. This is done to ensure that the data being processed is the most recent and relevant to current operations.
+Data Processing and Analysis:
+
+Once the correct files are identified, they are processed and analyzed according to predefined rules and operations. This step typically involves parsing the data, validating it, and preparing it for insertion into the database.
+File Validation:
+
+Each input file is validated to ensure it meets the required format; specifically, it must contain a Header and Trailer. Files not meeting this criteria are not processed further.
+Data Extraction and Loading:
+
+From the validated input files, the third column data, representing the party ID, is extracted. This extracted data is then ingested into the appropriate table in the SQL database.
+Data Comparison and Validation:
+
+The ingested party IDs are compared against existing IDs in two tables: cfccase and cfccaseexception. This comparison is to identify any discrepancies or mismatches.
+Discrepancy Notification:
+
+If discrepancies are found during the comparison, these are compiled into a notification (often an email) which is then sent to the end user. This alert informs them of the mismatches so that appropriate actions can be taken.
+File Deletion:
+
+After the file has been processed and analyzed, and once the relevant data has been safely ingested into the database, the files in the DBServer folder are deleted. This step is crucial to manage storage and ensure that only necessary files are kept.
