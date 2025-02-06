@@ -85,3 +85,48 @@ WHERE
 ORDER BY 
     msg.message_time DESC;
 
+
+
+
+
+
+
+
+
+
+**********************************************************************************
+
+
+
+Issue Summary: During the execution of an SSIS package, we received an error code 1326 related to xp_cmdshell. The specific error message was:
+
+"Error Executing the query, failed with error code 1326 an error occurred during the execution of xp_cmdshell, call to LogonUserW."
+
+This error typically indicates a user authentication problem, possibly related to incorrect credentials being used to access a network resource or execute commands. This situation has led to the failure of essential package operations that rely on xp_cmdshell.
+
+Request: Could you please verify the following on the database server?
+
+Check if xp_cmdshell is enabled - This is crucial for some of the operations our packages perform.
+Review the credentials configured for xp_cmdshell use, particularly if there's a proxy account involved, and ensure they are correct and have the necessary permissions.
+Confirm network access and permissions for the account on all specified paths and resources involved in the package.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
