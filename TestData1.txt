@@ -59,4 +59,29 @@ ORDER BY
     execs.start_time DESC;
 
 
-After the file has been processed and analyzed, and once the relevant data has been safely ingested into the database, the files in the DBServer folder are deleted. This step is crucial to manage storage and ensure that only necessary files are kept.
+
+SELECT 
+    event, computer, operator, source, sourceid, executionid, message, starttime, endtime
+FROM 
+    dbo.sysssislog
+WHERE 
+    event = 'OnError';
+
+
+USE SSISDB;
+SELECT 
+    execs.execution_id,
+    execs.package_name,
+    msg.message_time,
+    msg.message,
+    msg.message_type,
+    msg.message_source_name
+FROM 
+    catalog.executions AS execs
+JOIN 
+    catalog.event_messages AS msg ON execs.execution_id = msg.operation_id
+WHERE 
+    msg.message_type = 120 -- 120 represents Error messages
+ORDER BY 
+    msg.message_time DESC;
+
