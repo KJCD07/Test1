@@ -116,6 +116,172 @@ Confirm network access and permissions for the account on all specified paths an
 
 
 
+***********************************************
+
+
+ALTER PROCEDURE Report_MSBScanningAccuracyReport
+AS
+BEGIN
+    SET ANSI_NULLS OFF;
+    SET NOCOUNT ON;
+
+    -- Declare a temporary table to store results
+    CREATE TABLE #TempResults (
+        Record_ID INT,
+        Party_ID NVARCHAR(MAX),
+        Owner_Party_ID NVARCHAR(MAX),
+        Record_Status NVARCHAR(50),
+        Customer_Type NVARCHAR(50),
+        MSBType_Desc NVARCHAR(100),
+        Closure_Reason_Desc NVARCHAR(255),
+        Record_Created_On NVARCHAR(10)
+    );
+
+    -- Common Table Expressions (CTEs)
+    WITH Party1Cte AS
+    (
+        SELECT
+            C.COMPANY_ID,
+            ISNULL(STUFF(
+                (SELECT ',' + PM.PARTY_NO
+                 FROM PARTY_NUMBERS PM
+                 WHERE C.COMPANY_ID = PM.COMPANY_ID
+                 FOR XML PATH ('')), 1, 1, ''), '') AS Party_ID
+        FROM COMPANY C(NOLOCK)
+        LEFT JOIN PARTY_NUMBERS PN (NOLOCK) ON C.COMPANY_ID = PN.COMPANY_ID
+        WHERE
+            C.BUSINESS_SIDE = 1
+            AND C.RECORD_STATUS = 41
+        GROUP BY C.COMPANY_ID, PN.COMPANY_ID
+    ),
+    Owner_Party1Cte AS
+    (
+        SELECT
+            C.COMPANY_ID,
+            ISNULL(STUFF(
+                (SELECT ',' + PARTY_ID
+                 FROM OWNER_P(NOLOCK)
+                 JOIN OWNER_DETAILS OD (NOLOCK) ON OD.OWNER_DETAILS_ID = O.OWNER_DETAILS_ID
+                 WHERE C.COMPANY_ID = O.COMPANY_ID
+                 FOR XML PATH ('')), 1, 1, ''), '') AS Owner_Party_ID
+        FROM COMPANY C(NOLOCK)
+        WHERE
+            C.BUSINESS_SIDE = 1
+            AND C.RECORD_STATUS = 41
+        GROUP BY C.COMPANY_ID
+    ),
+    MSBTypeCTE AS
+    (
+        SELECT DISTINCT
+            C.COMPANY_ID,
+            ML.CODE_DESC AS MSBTypeDesc
+        FROM COMPANY C(NOLOCK)
+        LEFT JOIN MSB_STATUS MS(NOLOCK) ON C.COMPANY_ID = MS.COMPANY_ID
+        LEFT JOIN MSB_CODE ML(NOLOCK) ON MSB_CODE_ID = ML.CODE_ID
+        WHERE
+            C.BUSINESS_SIDE = 1
+            AND MS.MSB_STATUS_ID IN (SELECT MAX(MSB_STATUS_ID) FROM MSB_STATUS MS(NOLOCK)
+                                     INNER JOIN COMPANY C(NOLOCK) ON MS.COMPANY_ID = C.COMPANY_ID
+                                     WHERE C.BUSINESS_SIDE = 1 AND C.RECORD_STATUS = 41)
+            AND ML.CODE_ID IN (3, 4, 5)
+    ),
+    MSBClsReasonCTE AS
+    (
+        SELECT DISTINCT
+            C.COMPANY_ID,
+            ACC.CLOSURE_REASON_DESC
+        FROM COMPANY C(NOLOCK)
+        LEFT JOIN CLOSING_RELATIONSHIP CR(NOLOCK) ON C.COMPANY_ID = CR.COMPANY_ID
+        LEFT JOIN ACCOUNT_CLOSURE_CODE ACC(NOLOCK) ON CR.CLOSURE_REASON_CD = ACC.ACCOUNT_CLOSURE_CD
+        WHERE
+            C.BUSINESS_SIDE = 1
+            AND C.RECORD_STATUS = 41
+    )
+
+    -- Insert query results into the temporary table
+    INSERT INTO #TempResults
+    SELECT
+        A.ID AS Record_ID,
+        ISNULL(PC1.Party_ID, '') AS Party_ID,
+        ISNULL(OP1.Owner_Party_ID, '') AS Owner_Party_ID,
+        CASE 
+            WHEN C.RECORD_STATUS = 1 THEN 'Created'
+            WHEN C.RECORD_STATUS IN (41) THEN 'Inactive'
+            ELSE 'Record Status'
+        END AS Record_Status,
+        CASE 
+            WHEN C.CUSTOMER_TYPE = 'B' THEN 'Business'
+            ELSE C.CUSTOMER_TYPE
+        END AS Customer_Type,
+        ISNULL(MTC.MSBTypeDesc, '') AS MSBType_Desc,
+        ISNULL(CR.CLOSURE_REASON_DESC, '') AS Closure_Reason_Desc,
+        CONVERT(VARCHAR, A.OCCURRED_AT, 101) AS Record_Created_On
+    FROM COMPANY C(NOLOCK)
+    LEFT JOIN Party1Cte PC1(NOLOCK) ON C.COMPANY_ID = PC1.COMPANY_ID
+    LEFT JOIN Owner_Party1Cte OP1(NOLOCK) ON C.COMPANY_ID = OP1.COMPANY_ID
+    LEFT JOIN MSBTypeCTE MTC(NOLOCK) ON C.COMPANY_ID = MTC.COMPANY_ID
+    LEFT JOIN MSBClsReasonCTE CR(NOLOCK) ON C.COMPANY_ID = CR.COMPANY_ID
+    INNER JOIN AUDIT A(NOLOCK) ON A.COMPANY_ID = C.COMPANY_ID
+    WHERE
+        (SELECT MAX(AUDITED) FROM AUDIT(NOLOCK) WHERE FILENAME = 'File Processed'
+         AND INITIATED_FILE IN 
+         (SELECT CONVERT(VARCHAR, A.OCCURRED_AT, 101) FROM AUDIT(NOLOCK) 
+          WHERE INITIATED_FILE = 'File Processed' 
+          AND CONVERT(VARCHAR, A.OCCURRED_AT, 101) BETWEEN 
+          CONVERT(VARCHAR, '10/01/2024', 101) AND CONVERT(VARCHAR, '10/31/2024', 101))) IS NOT NULL
+        AND C.BUSINESS_SIDE = 1
+        AND C.RECORD_STATUS = 41
+        AND ISNULL(CLOSURE_REASON_DESC, '') NOT IN ('Duplicate Record')
+    ORDER BY CLOSURE_REASON_DESC;
+
+    -- Check if there is data in the temporary table
+    IF EXISTS (SELECT 1 FROM #TempResults)
+    BEGIN
+        -- Export data to a CSV file (or use another format if needed)
+        DECLARE @FilePath NVARCHAR(4000) = 'C:\Reports\MSBScanningAccuracyReport.csv';
+
+        -- Generate CSV output (for SQL Server 2016+ use STRING_AGG, otherwise use XML PATH)
+        DECLARE @CSVHeader NVARCHAR(MAX) = 'Record_ID,Party_ID,Owner_Party_ID,Record_Status,Customer_Type,MSBType_Desc,Closure_Reason_Desc,Record_Created_On';
+        DECLARE @CSVData NVARCHAR(MAX) = '';
+
+        SELECT @CSVData = @CSVData + 
+            CAST(Record_ID AS NVARCHAR) + ',' +
+            Party_ID + ',' +
+            Owner_Party_ID + ',' +
+            Record_Status + ',' +
+            Customer_Type + ',' +
+            MSBType_Desc + ',' +
+            Closure_Reason_Desc + ',' +
+            Record_Created_On + CHAR(13) + CHAR(10)
+        FROM #TempResults;
+
+        DECLARE @FullCSV NVARCHAR(MAX) = @CSVHeader + CHAR(13) + CHAR(10) + @CSVData;
+
+        -- Save CSV to file using OLE Automation (Enable if not already enabled)
+        EXEC sp_configure 'show advanced options', 1;
+        RECONFIGURE;
+        EXEC sp_configure 'Ole Automation Procedures', 1;
+        RECONFIGURE;
+
+        -- Write file (Requires permissions)
+        DECLARE @Object INT;
+        EXEC sp_OACreate 'Scripting.FileSystemObject', @Object OUTPUT;
+        EXEC sp_OAMethod @Object, 'OpenTextFile', NULL, @FilePath, 2, 1;
+        EXEC sp_OAMethod @Object, 'Write', NULL, @FullCSV;
+        EXEC sp_OADestroy @Object;
+
+        -- Send email with the CSV file as an attachment
+        EXEC msdb.dbo.sp_send_dbmail
+            @profile_name = 'YourMailProfile',
+            @recipients = 'user@example.com',
+            @subject = 'MSB Scanning Accuracy Report',
+            @body = 'Please find the attached report.',
+            @file_attachments = @FilePath;
+    END
+
+    -- Drop the temporary table
+    DROP TABLE #TempResults;
+END;
 
 
 
