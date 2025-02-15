@@ -283,6 +283,47 @@ BEGIN
     DROP TABLE #TempResults;
 END;
 
+******************************************ASDddddddddddddddddddddddddd
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+SELECT 
+    CAST('<x>' + REPLACE(Line, '|', '</x><x>') + '</x>' AS XML).value('/x[3]', 'VARCHAR(MAX)') AS ThirdValue
+FROM OOO;
+
+
+
+
+WITH CTE AS (
+    SELECT value, ROW_NUMBER() OVER (ORDER BY (SELECT NULL)) AS rn
+    FROM OOO
+    CROSS APPLY STRING_SPLIT(Line, '|')
+)
+SELECT value AS ThirdValue
+FROM CTE
+WHERE rn = 3;
+
+
+
+
+
+
+
+
+
+
 
 
 
