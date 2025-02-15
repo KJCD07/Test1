@@ -337,6 +337,31 @@ FROM OOO;
 
 
 
+DECLARE @ValueA INT, @ValueB INT, @EmailBody NVARCHAR(MAX), @EmailSubject NVARCHAR(255);
+
+-- Assign values (These can be retrieved from tables as well)
+SET @ValueA = (SELECT Value FROM TableA WHERE ID = 1);
+SET @ValueB = (SELECT Value FROM TableB WHERE ID = 1);
+
+-- Check if values match
+IF @ValueA <> @ValueB
+BEGIN
+    -- Set Email Content
+    SET @EmailSubject = 'Alert: Data Mismatch Detected';
+    SET @EmailBody = 'Mismatch detected between TableA and TableB. ' 
+                     + 'ValueA: ' + CAST(@ValueA AS NVARCHAR) 
+                     + ', ValueB: ' + CAST(@ValueB AS NVARCHAR);
+
+    -- Send Email (Make sure Database Mail is configured)
+    EXEC msdb.dbo.sp_send_dbmail 
+         @profile_name = 'YourMailProfile',  -- Change this to your DB Mail profile name
+         @recipients = 'your_email@example.com',  -- Change recipient
+         @subject = @EmailSubject,
+         @body = @EmailBody;
+
+    -- Exit the process
+    RETURN;
+END;
 
 
 
