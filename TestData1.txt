@@ -1,56 +1,53 @@
+Removing .NET 6 Components from a Windows Server Running a .NET Application – Detailed Explanation
+Understanding Dependencies and Impact
+Before proceeding with the removal of the following components:
 
-Ensure you are on your feature branch: First, switch to your feature branch by running:
-git checkout feature-branch
+Microsoft .NET Core Windows Server Hosting 6
+Microsoft .NET Runtime 6
+Microsoft ASP.NET Core Hosting Bundle 6
+it is critical to understand how they affect your running .NET application.
 
-Fetch the latest changes from the remote: Fetch the latest code from the remote repository (this pulls all changes, but doesn’t merge them):
+1️⃣ Dependencies of These Components
+📌 Microsoft .NET Core Windows Server Hosting 6
+This is needed when hosting an ASP.NET Core application in IIS.
+It installs:
+ASP.NET Core Module (ANCM) for IIS integration.
+.NET Runtime 6, which is needed to execute the application.
+🔴 Impact of Removal:
 
-git fetch origin
+If your application is hosted on IIS, it will stop working because IIS won’t be able to process .NET Core requests.
+📌 Microsoft .NET Runtime 6
+This is the core runtime required to execute any .NET 6 application.
+If your application is compiled to .NET 6, it requires this runtime to function.
+🔴 Impact of Removal:
 
-Merge the latest changes from master into your feature branch: Now, merge the master branch into your feature branch:
-git merge origin/master
+If your application is a .NET 6 Console, Windows Service, or IIS-based app, it will stop running.
+📌 Microsoft ASP.NET Core Hosting Bundle 6
+This bundle includes:
+.NET Runtime 6
+ASP.NET Core Runtime 6
+ASP.NET Core Module (ANCM) for IIS.
+🔴 Impact of Removal:
 
-This will bring in all the changes that were made to the master branch into your current feature branch.
-
-Resolve any conflicts (if necessary): If there are any merge conflicts, Git will notify you. You’ll need to manually resolve the conflicts in the affected files. Once resolved, stage the changes:
-
-git add <resolved-file>
-
-After resolving all conflicts, complete the merge with:
-
-git merge --continue
-
-Push the changes to the remote feature branch: After successfully merging, push the updated feature branch to the remote repository:
-
-git push origin feature-branch
-
-
-
----- Rebase Option
-
-Switch to your feature branch:
-git checkout feature-branch
-
-Fetch the latest changes:
-
-git fetch origin
-
-Rebase your feature branch onto master:
-
-git rebase origin/master
-
-Resolve any conflicts (if necessary): Similar to the merge, if there are conflicts, resolve them, stage the changes, and continue the rebase:
-
-git add <resolved-file>
-
-git rebase --continue
-
-Push your feature branch: After the rebase is done, force-push (since rebase rewrites history):
-
-git push origin feature-branch --force
+If your application is ASP.NET Core and hosted on IIS, it will no longer work.
+The entire web hosting capability will be lost.
 
 
 
-Youtube link 
 
-https://youtu.be/f1wnYdLEpgI
+
+ Step 3: Clean Up Residual Files (Optional)
+After uninstalling, you may need to manually remove remaining files:
+
+Open C:\Program Files\dotnet\
+Delete any leftover .NET 6 folders.
+To verify removal, run:
+
+cmd
+Copy
+Edit
+dotnet --list-runtimes
+Ensure .NET 6 is no longer listed.
+
+
 
