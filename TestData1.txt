@@ -1,53 +1,25 @@
-Removing .NET 6 Components from a Windows Server Running a .NET Application – Detailed Explanation
-Understanding Dependencies and Impact
-Before proceeding with the removal of the following components:
+WITH ExcludedParties AS (
+    SELECT CFCP.PartyID
+    FROM CFCCase CFCC WITH (NOLOCK)
+    INNER JOIN CFCMapping CFCM WITH (NOLOCK) ON CFCM.CFCCaseID = CFCC.CFCCID
+    INNER JOIN CFCParty CFCP WITH (NOLOCK) ON CFCP.CFCID = CFCM.CFCID
+    LEFT JOIN CST cst WITH (NOLOCK) ON CFCP.PartyID = cst.PTYID
+    WHERE 
+        CFCC.CreatedDate >= CAST(GETDATE() AS DATE) 
+        AND CFCC.CreatedDate < DATEADD(DAY, 1, CAST(GETDATE() AS DATE))
+        AND CFCP.PartyCategory = 'Initial'
 
-Microsoft .NET Core Windows Server Hosting 6
-Microsoft .NET Runtime 6
-Microsoft ASP.NET Core Hosting Bundle 6
-it is critical to understand how they affect your running .NET application.
+    UNION ALL
 
-1️⃣ Dependencies of These Components
-📌 Microsoft .NET Core Windows Server Hosting 6
-This is needed when hosting an ASP.NET Core application in IIS.
-It installs:
-ASP.NET Core Module (ANCM) for IIS integration.
-.NET Runtime 6, which is needed to execute the application.
-🔴 Impact of Removal:
+    SELECT PartyID 
+    FROM CFCCaseException CFCE WITH (NOLOCK)
+    WHERE 
+        CFCE.CreatedDate >= CAST(GETDATE() AS DATE) 
+        AND CFCE.CreatedDate < DATEADD(DAY, 1, CAST(GETDATE() AS DATE))
+)
 
-If your application is hosted on IIS, it will stop working because IIS won’t be able to process .NET Core requests.
-📌 Microsoft .NET Runtime 6
-This is the core runtime required to execute any .NET 6 application.
-If your application is compiled to .NET 6, it requires this runtime to function.
-🔴 Impact of Removal:
-
-If your application is a .NET 6 Console, Windows Service, or IIS-based app, it will stop running.
-📌 Microsoft ASP.NET Core Hosting Bundle 6
-This bundle includes:
-.NET Runtime 6
-ASP.NET Core Runtime 6
-ASP.NET Core Module (ANCM) for IIS.
-🔴 Impact of Removal:
-
-If your application is ASP.NET Core and hosted on IIS, it will no longer work.
-The entire web hosting capability will be lost.
-
-
-
-
-
- Step 3: Clean Up Residual Files (Optional)
-After uninstalling, you may need to manually remove remaining files:
-
-Open C:\Program Files\dotnet\
-Delete any leftover .NET 6 folders.
-To verify removal, run:
-
-cmd
-Copy
-Edit
-dotnet --list-runtimes
-Ensure .NET 6 is no longer listed.
-
-
-
+SELECT 
+    ROW_NUMBER() OVER (ORDER BY PID) AS SerialNumber, 
+    PID AS PartyID 
+FROM #ACMSIngestionReconFile DT WITH (NOLOCK)
+WHERE DT.PID NOT IN (SELECT PartyID FROM ExcludedParties);
