@@ -16,3 +16,10 @@ Copy
 Edit
 rpm -qa | grep teradata
 or check manually in /opt/teradata/client/17.10/etc/.
+
+
+
+The Microsoft.IdentityModel.Tokens library is a key component for working with security tokens, including validation of JWT (JSON Web Tokens), token signing, and encryption, in .NET applications. Version 6.9.0 is a recent release that provides support for managing and validating tokens issued by various identity providers, such as Azure AD or custom providers.
+
+Here’s how you can use Microsoft.IdentityModel.Tokens 6.9.0 to work with JWTs and perform tasks like token validation, signing, and encryption:
+
