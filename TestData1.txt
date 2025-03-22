@@ -1,25 +1,27 @@
-The file /opt/teradata/client/17.10/etc/clispb.dat is part of the Teradata Client Tools installation and is typically found in Linux/Unix environments where Teradata Client (version 17.10 in this case) is installed.
-
-Where to Find This File:
-Environment:
-
-This file is located in the Teradata Client installation directory on Linux/Unix systems.
-It is typically found in /opt/teradata/client/<version>/etc/clispb.dat, where <version> corresponds to the installed Teradata client version (e.g., 17.10 in your case).
-It is a configuration file related to CLI (Call-Level Interface) settings used by Teradata utilities like bteq, fastload, multiload, etc.
-Installed Product:
-
-This file is installed as part of the Teradata Tools and Utilities (TTU) package.
-If you have installed Teradata ODBC, CLI, or utilities like BTEQ, FastExport, FastLoad, or MultiLoad, this file will be part of that package.
-You can verify the installation using:
-bash
-Copy
-Edit
-rpm -qa | grep teradata
-or check manually in /opt/teradata/client/17.10/etc/.
-
-
-
-The Microsoft.IdentityModel.Tokens library is a key component for working with security tokens, including validation of JWT (JSON Web Tokens), token signing, and encryption, in .NET applications. Version 6.9.0 is a recent release that provides support for managing and validating tokens issued by various identity providers, such as Azure AD or custom providers.
-
-Here’s how you can use Microsoft.IdentityModel.Tokens 6.9.0 to work with JWTs and perform tasks like token validation, signing, and encryption:
-
+SELECT 
+    ROW_NUMBER() OVER (ORDER BY PID) AS [serialNum],
+    PID AS PartyID
+FROM MACMSIngestionReconcile WITH (NOLOCK) DT
+WHERE NOT EXISTS 
+(
+    SELECT 1
+    FROM CFCParty WITH (NOLOCK) CFCP
+    WHERE CFCP.PartyID = DT.PID
+      AND CFCP.PartyCategory = 'Initial'
+      AND EXISTS (
+          SELECT 1
+          FROM CFCMapping WITH (NOLOCK) CFCM
+          INNER JOIN CFCcase WITH (NOLOCK) CFCC ON CFCC.CFCCaseID = CFCM.CFCCaseID
+          WHERE CFCM.CFCPartyID = CFCP.ID
+            AND CFCC.CreatedDate >= CAST(GETDATE() AS DATE)
+            AND CFCC.CreatedDate < DATEADD(DAY, 1, CAST(GETDATE() AS DATE))
+      )
+)
+AND NOT EXISTS 
+(
+    SELECT 1
+    FROM CFCcaseException WITH (NOLOCK) CFCE
+    WHERE CFCE.PartyID = DT.PID
+      AND CFCE.CreatedDate >= CAST(GETDATE() AS DATE)
+      AND CFCE.CreatedDate < DATEADD(DAY, 1, CAST(GETDATE() AS DATE))
+);
