@@ -35,3 +35,24 @@ The file contains two columns that are related to DateTime values: the Customer 
 Upon further investigation, we discovered that the issue arises from the cell format of the Created Date column. Although the column displays valid DateTime values, the Excel cell format is not correctly set for DateTime. Instead, it appears to be mapped to the general cell format, causing the DateTime values to be interpreted as whole numbers. This results in the error when the MSB application attempts to process the file.
 
 To resolve this, I recommend ensuring that both the Customer Date of Birth and Created Date columns are correctly formatted as DateTime in Excel. This should prevent the MSB application from interpreting the DateTime values as numbers, allowing the file to be processed without errors.
+
+
+
+
+*********************************************************
+
+
+
+Set the Correct Date Format:
+
+Right-click on the selected column(s) and choose Format Cells.
+
+In the Format Cells dialog, select the Date category.
+
+Choose an appropriate date format (for example, MM/DD/YYYY or YYYY-MM-DD depending on your application requirements).
+
+Click OK to apply the changes.
+
+Check for Hidden Formatting Issues:
+
+After setting the format, double-check that the cells still display the dates correctly and aren't being treated as numbers (you can do this by testing the cells with a formula like =ISNUMBER(A1)).
