@@ -25,3 +25,13 @@ AND NOT EXISTS
       AND CFCE.CreatedDate >= CAST(GETDATE() AS DATE)
       AND CFCE.CreatedDate < DATEADD(DAY, 1, CAST(GETDATE() AS DATE))
 );
+
+
+*********************************************
+
+
+The file contains two columns that are related to DateTime values: the Customer Date of Birth (Column 11) and the Created Date (Column 21). While these columns are populated with valid DateTime values when the file is opened, the MSB application is throwing the error message: "Invalid DateTime Cell."
+
+Upon further investigation, we discovered that the issue arises from the cell format of the Created Date column. Although the column displays valid DateTime values, the Excel cell format is not correctly set for DateTime. Instead, it appears to be mapped to the general cell format, causing the DateTime values to be interpreted as whole numbers. This results in the error when the MSB application attempts to process the file.
+
+To resolve this, I recommend ensuring that both the Customer Date of Birth and Created Date columns are correctly formatted as DateTime in Excel. This should prevent the MSB application from interpreting the DateTime values as numbers, allowing the file to be processed without errors.
