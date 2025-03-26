@@ -69,3 +69,41 @@ SET @html = @html + N'</table>';
 -- Output (for testing or email body)
 PRINT @html;
 
+
+
+
+
+
+
+
+
+**********************************************************************
+
+
+DECLARE @xml1 VARCHAR(MAX) = (
+    SELECT
+        N'<table border="1">' + CHAR(10) +
+        N'<tr><th style="background-color: #d3d3d3;">Sno</th>' +
+        N'<th style="background-color: #d3d3d3;">Party Id</th>' +
+        N'<th style="background-color: #d3d3d3;">Source</th></tr>' + CHAR(10) +
+        REPLACE(REPLACE(REPLACE(
+            (SELECT CAST((
+                SELECT td = Sno, '',
+                       td = 'zwnj;' + PID, '',
+                       td = 'zwnj;' + ExistingPID, '',
+                       td = 'New'
+                FROM #finalresult
+                WHERE PID NOT IN (SELECT PID FROM #PriorRecords)
+                UNION ALL
+                SELECT td = NULL, '',
+                       td = 'zwnj;' + PID, '',
+                       td = NULL, '',
+                       td = 'Prior'
+                FROM #PriorRecords
+                FOR XML PATH('tr'), TYPE
+            ) AS NVARCHAR(MAX))
+            ), '<td>zwnj;', '<td>&zwnj;'), '</tr>', '</tr>' + CHAR(10)), '', '') +
+        N'</table>'
+);
+
+
