@@ -193,3 +193,43 @@ DECLARE @xml1 VARCHAR(MAX) = (
 
 
 
+
+
+
+
+
+
+
+
+
+
+***********************************
+
+
+DECLARE @xml VARCHAR(MAX) = 
+(
+    SELECT 
+        N'<table border="1" cellspacing="0" cellpadding="5" style="border-collapse: collapse;">' + CHAR(10) +
+        N'  <tr>
+                <th style="background-color: #d3d3d3;">Sno</th>
+                <th style="background-color: #d3d3d3;">Party Id</th>
+            </tr>' + CHAR(10) +
+
+        REPLACE(REPLACE(REPLACE((
+            SELECT CAST((
+                SELECT 
+                    td = Sno, '',
+                    td = '&#8205;' + PID, ''
+                FROM #finalresult
+                WHERE PID NOT IN (SELECT PID FROM #PriorRecords)
+                FOR XML PATH('tr'), TYPE
+            ) AS NVARCHAR(MAX))
+        ), '<td>&#8205;', '<td>&zwj;'),
+           '</tr>', '</tr>' + CHAR(10)),
+           '') +
+
+        N'</table>'
+);
+
+
+
