@@ -40,19 +40,32 @@ To resolve this, I recommend ensuring that both the Customer Date of Birth and C
 
 
 *********************************************************
+DECLARE @html NVARCHAR(MAX);
 
+-- Create an HTML table with styles
+SET @html = 
+N'<table border="1" cellpadding="6" cellspacing="0" style="border-collapse: collapse; font-family: Segoe UI; font-size: 13px;">' +
+N'<tr style="background-color:#d3d3d3;">' +
+N'<th>EmpID</th><th>EmpName</th><th>DeptName</th></tr>';
 
+-- Add combined rows using ROW_NUMBER for alignment
+;WITH A AS (
+    SELECT ROW_NUMBER() OVER (ORDER BY EmpID) AS rn, EmpID, EmpName FROM Employee
+), B AS (
+    SELECT ROW_NUMBER() OVER (ORDER BY DeptName) AS rn, DeptName FROM Department
+)
+SELECT @html = @html + 
+    (SELECT 
+        td = CAST(A.EmpID AS NVARCHAR), '',
+        td = A.EmpName, '',
+        td = B.DeptName
+     FROM A
+     FULL OUTER JOIN B ON A.rn = B.rn
+     FOR XML PATH('tr'), TYPE).value('.', 'NVARCHAR(MAX)');
 
-Set the Correct Date Format:
+-- Close the table
+SET @html = @html + N'</table>';
 
-Right-click on the selected column(s) and choose Format Cells.
+-- Output (for testing or email body)
+PRINT @html;
 
-In the Format Cells dialog, select the Date category.
-
-Choose an appropriate date format (for example, MM/DD/YYYY or YYYY-MM-DD depending on your application requirements).
-
-Click OK to apply the changes.
-
-Check for Hidden Formatting Issues:
-
-After setting the format, double-check that the cells still display the dates correctly and aren't being treated as numbers (you can do this by testing the cells with a formula like =ISNUMBER(A1)).
