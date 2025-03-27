@@ -26,210 +26,26 @@ AND NOT EXISTS
       AND CFCE.CreatedDate < DATEADD(DAY, 1, CAST(GETDATE() AS DATE))
 );
 
+*****************************************************************************************************************
 
-*********************************************
 
 
-The file contains two columns that are related to DateTime values: the Customer Date of Birth (Column 11) and the Created Date (Column 21). While these columns are populated with valid DateTime values when the file is opened, the MSB application is throwing the error message: "Invalid DateTime Cell."
+The initial daily ACMS-ICM Case Ingestion Recon Report includes key metrics to verify the ingestion of all parties from the original text file into ACMS:
 
-Upon further investigation, we discovered that the issue arises from the cell format of the Created Date column. Although the column displays valid DateTime values, the Excel cell format is not correctly set for DateTime. Instead, it appears to be mapped to the general cell format, causing the DateTime values to be interpreted as whole numbers. This results in the error when the MSB application attempts to process the file.
+Total Number of Parties Ingested – The total count of parties from the daily text file loaded by the operations team.
 
-To resolve this, I recommend ensuring that both the Customer Date of Birth and Created Date columns are correctly formatted as DateTime in Excel. This should prevent the MSB application from interpreting the DateTime values as numbers, allowing the file to be processed without errors.
+Total Number of Processed Parties – The number of parties successfully ingested into the Closure for Cause Case Manager and available for processing.
 
+Total Number of Exception Parties – The number of parties that appear in the Closure for Cause Exception Queue due to ingestion issues.
 
+Example: "No Valid Party Found" indicates that the party no longer exists in WCC.
 
+Total Number of Cases Already Existing with Same Accounts and Parties – Cases where the same parties and accounts already exist in ACMS but with a different ingestion date.
 
-*********************************************************
-DECLARE @html NVARCHAR(MAX);
+Total Number of Missed Parties for Ingestion – Parties that do not fall into any of the above categories and require further investigation.
 
--- Create an HTML table with styles
-SET @html = 
-N'<table border="1" cellpadding="6" cellspacing="0" style="border-collapse: collapse; font-family: Segoe UI; font-size: 13px;">' +
-N'<tr style="background-color:#d3d3d3;">' +
-N'<th>EmpID</th><th>EmpName</th><th>DeptName</th></tr>';
+To better track parties that already exist in ACMS on different dates but also appear in the current day's ingestion report, an additional field has been added to the daily recon report.
 
--- Add combined rows using ROW_NUMBER for alignment
-;WITH A AS (
-    SELECT ROW_NUMBER() OVER (ORDER BY EmpID) AS rn, EmpID, EmpName FROM Employee
-), B AS (
-    SELECT ROW_NUMBER() OVER (ORDER BY DeptName) AS rn, DeptName FROM Department
-)
-SELECT @html = @html + 
-    (SELECT 
-        td = CAST(A.EmpID AS NVARCHAR), '',
-        td = A.EmpName, '',
-        td = B.DeptName
-     FROM A
-     FULL OUTER JOIN B ON A.rn = B.rn
-     FOR XML PATH('tr'), TYPE).value('.', 'NVARCHAR(MAX)');
+The "Total Number of Cases Already Existing with Same Accounts and Parties" field helps clarify that these are not missed parties.
 
--- Close the table
-SET @html = @html + N'</table>';
-
--- Output (for testing or email body)
-PRINT @html;
-
-
-
-
-
-
-
-
-
-**********************************************************************
-
-
-DECLARE @xml1 VARCHAR(MAX) = (
-    SELECT
-        N'<table border="1">' + CHAR(10) +
-        N'<tr><th style="background-color: #d3d3d3;">Sno</th>' +
-        N'<th style="background-color: #d3d3d3;">Party Id</th>' +
-        N'<th style="background-color: #d3d3d3;">Source</th></tr>' + CHAR(10) +
-        REPLACE(REPLACE(REPLACE(
-            (SELECT CAST((
-                SELECT td = Sno, '',
-                       td = 'zwnj;' + PID, '',
-                       td = 'zwnj;' + ExistingPID, '',
-                       td = 'New'
-                FROM #finalresult
-                WHERE PID NOT IN (SELECT PID FROM #PriorRecords)
-                UNION ALL
-                SELECT td = NULL, '',
-                       td = 'zwnj;' + PID, '',
-                       td = NULL, '',
-                       td = 'Prior'
-                FROM #PriorRecords
-                FOR XML PATH('tr'), TYPE
-            ) AS NVARCHAR(MAX))
-            ), '<td>zwnj;', '<td>&zwnj;'), '</tr>', '</tr>' + CHAR(10)), '', '') +
-        N'</table>'
-);
-
-
-
-*************************************************************************************************************
-
-
-
-
-
-
-
-
-
-
-
-
-
-DECLARE @xml1 VARCHAR(MAX) = (
-    SELECT
-        N'<table border="1">' + CHAR(10) +
-        N'<tr><th style="background-color: #d3d3d3;">Sno</th>' +
-        N'<th style="background-color: #d3d3d3;">Party Id</th>' +
-        N'<th style="background-color: #d3d3d3;">Source</th></tr>' + CHAR(10) +
-        REPLACE(REPLACE(REPLACE(
-            (SELECT CAST((
-                SELECT td = Sno, '',
-                       td = 'zwnj;' + PID, '',
-                       td = 'zwnj;' + ExistingPID, '',
-                       td = 'New'
-                FROM #finalresult
-                WHERE PID NOT IN (SELECT PID FROM #PriorRecords)
-                UNION ALL
-                SELECT td = NULL, '',
-                       td = 'zwnj;' + PID, '',
-                       td = NULL, '',
-                       td = 'Prior'
-                FROM #PriorRecords
-                FOR XML PATH('tr'), TYPE
-            ) AS NVARCHAR(MAX))
-            ), '<td>zwnj;', '<td>&zwnj;'), '</tr>', '</tr>' + CHAR(10)), '', '') +
-        N'</table>'
-);
-
-
-*******************************************************************************************************************
-*******************************************************************************************************************
-
-
-DECLARE @xml1 VARCHAR(MAX) = (
-    SELECT
-        N'<table border="1">' + CHAR(10) +
-        N'<tr>
-            <th style="background-color: #d3d3d3;">Sno</th>
-            <th style="background-color: #d3d3d3;">Party Id</th>
-            <th style="background-color: #d3d3d3;">Source</th>
-        </tr>' + CHAR(10) +
-        REPLACE(REPLACE(REPLACE(
-            (
-                SELECT CAST((
-                    SELECT 
-                        '' AS [td], 
-                        Sno AS [td],
-                        '' AS [td], 
-                        '&zwnj;' + PID AS [td],
-                        '' AS [td], 
-                        'New' AS [td]
-                    FROM #finalresult
-                    WHERE PID NOT IN (SELECT PID FROM #PriorRecords)
-
-                    UNION ALL
-
-                    SELECT 
-                        '' AS [td],
-                        NULL AS [td],
-                        '' AS [td],
-                        '&zwnj;' + PID AS [td],
-                        '' AS [td],
-                        'Prior' AS [td]
-                    FROM #PriorRecords
-                ) FOR XML PATH('tr'), TYPE) AS NVARCHAR(MAX)
-            ), '<td>zwnj;', '<td>&zwnj;'), '</tr>', '</tr>' + CHAR(10)
-        ), '', '') +
-        N'</table>'
-);
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-***********************************
-
-
-DECLARE @xml VARCHAR(MAX) = 
-(
-    SELECT 
-        N'<table border="1" cellspacing="0" cellpadding="5" style="border-collapse: collapse;">' + CHAR(10) +
-        N'  <tr>
-                <th style="background-color: #d3d3d3;">Sno</th>
-                <th style="background-color: #d3d3d3;">Party Id</th>
-            </tr>' + CHAR(10) +
-
-        REPLACE(REPLACE(REPLACE((
-            SELECT CAST((
-                SELECT 
-                    td = Sno, '',
-                    td = '&#8205;' + PID, ''
-                FROM #finalresult
-                WHERE PID NOT IN (SELECT PID FROM #PriorRecords)
-                FOR XML PATH('tr'), TYPE
-            ) AS NVARCHAR(MAX))
-        ), '<td>&#8205;', '<td>&zwj;'),
-           '</tr>', '</tr>' + CHAR(10)),
-           '') +
-
-        N'</table>'
-);
-
-
-
+A follow-up email will include an attached spreadsheet containing the detailed breakdown of these cases.
