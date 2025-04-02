@@ -29,23 +29,57 @@ AND NOT EXISTS
 *****************************************************************************************************************
 
 
+ACMS Case Ingestion Overview
+The ACMS (Application Case Management System) supports case ingestion through multiple mechanisms:
 
-The initial daily ACMS-ICM Case Ingestion Recon Report includes key metrics to verify the ingestion of all parties from the original text file into ACMS:
+Linked Server
 
-Total Number of Parties Ingested – The total count of parties from the daily text file loaded by the operations team.
+File Feed
 
-Total Number of Processed Parties – The number of parties successfully ingested into the Closure for Cause Case Manager and available for processing.
+Service Ingestion
 
-Total Number of Exception Parties – The number of parties that appear in the Closure for Cause Exception Queue due to ingestion issues.
+Management of Cases (MOC)
+Ingestion Method: File Feed
 
-Example: "No Valid Party Found" indicates that the party no longer exists in WCC.
+Validation Logic:
 
-Total Number of Cases Already Existing with Same Accounts and Parties – Cases where the same parties and accounts already exist in ACMS but with a different ingestion date.
+No mandatory field validation is enforced.
 
-Total Number of Missed Parties for Ingestion – Parties that do not fall into any of the above categories and require further investigation.
+The system verifies:
 
-To better track parties that already exist in ACMS on different dates but also appear in the current day's ingestion report, an additional field has been added to the daily recon report.
+Presence of both header and trailer records.
 
-The "Total Number of Cases Already Existing with Same Accounts and Parties" field helps clarify that these are not missed parties.
+The presence of 23 pipe (|) delimiters per line to ensure structural consistency.
 
-A follow-up email will include an attached spreadsheet containing the detailed breakdown of these cases.
+Processing Logic:
+
+Although fields are not validated as "mandatory" per se, the application logic expects data for certain critical fields.
+
+If any of these key fields are missing, the record is routed to Exception Cases and is not processed as a valid case.
+
+CSU Cases
+Ingestion Method: Linked Server
+
+Data Source: Fetched from predefined database views via the linked server.
+
+Processing Flow:
+
+Case ingestion is executed using a stored procedure that inserts the data into the ACMS application.
+
+No mandatory field validation is applied by the stored procedure.
+
+Observation:
+
+Analysis of incoming data from ART (presumably the source system) suggests that successful case creation depends on the presence of certain field values.
+
+These fields, while not enforced as mandatory in the logic, are practically necessary for case creation to proceed without errors.
+
+MSB Cases
+Ingestion Method: Linked Server
+
+Data Source: (Please complete — it seems the input was cut off here.)
+
+Let me know which view or source MSB cases pull from so I can complete this section.
+
+
+
