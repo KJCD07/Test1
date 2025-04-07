@@ -93,5 +93,7 @@ This document serves as a post-rotation validation checklist to confirm that all
 
 
 
+AutoSys is a job scheduling, monitoring, and reporting tool used for automating batch processes across a distributed environment. It allows jobs to be scheduled on different machines, manage dependencies, and handle failures automatically. AutoSys jobs are defined using Job Information Language (JIL) scripts, which specify job attributes like owner, command, machine, schedule, and more.
+
 
 
