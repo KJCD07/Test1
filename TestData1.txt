@@ -87,13 +87,36 @@ Let me know which view or source MSB cases pull from so I can complete this sect
 
 
 
-Password rotation is a critical security practice to safeguard system access and protect sensitive information. While rotating passwords is an essential step, it is equally important to ensure that all dependent services, integrations, and user workflows continue to function seamlessly after the change.
+The xp_cmdshell extended stored procedure in SQL Server allows execution of command-line operations directly from SQL queries. Often, it’s used to perform tasks like file manipulation, calling batch scripts, or accessing network shares.
 
-This document serves as a post-rotation validation checklist to confirm that all affected systems and applications have successfully adopted the new credentials. It helps minimize downtime, reduce access-related errors, and ensure business continuity by systematically verifying each component that may be impacted by the password update.
+If the commands executed through xp_cmdshell rely on:
 
+Mapped network drives
 
+Remote file shares
 
-AutoSys is a job scheduling, monitoring, and reporting tool used for automating batch processes across a distributed environment. It allows jobs to be scheduled on different machines, manage dependencies, and handle failures automatically. AutoSys jobs are defined using Job Information Language (JIL) scripts, which specify job attributes like owner, command, machine, schedule, and more.
+Services or scripts that use explicit credentials
 
+Scheduled tasks or executables requiring authentication
+
+Then the username and password used to access those resources need to be re-supplied after the password is changed.
+
+✅ Common Use Case
+For example, if you're using xp_cmdshell to copy files to a network share:
+
+sql
+Copy
+Edit
+EXEC xp_cmdshell 'net use \\servername\share password /user:domain\username';
+If the password for domain\username changes, the above command will fail unless updated with the new password.
+
+🎯 Summary
+Updating credentials in xp_cmdshell ensures that:
+
+Access to external systems remains uninterrupted
+
+File transfers, script executions, and automated tasks do not fail
+
+Post-password rotation activities are fully compliant and tested
 
 
