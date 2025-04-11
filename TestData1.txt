@@ -1,99 +1,57 @@
-SELECT 
-    ROW_NUMBER() OVER (ORDER BY PID) AS [serialNum],
-    PID AS PartyID
-FROM MACMSIngestionReconcile WITH (NOLOCK) DT
-WHERE NOT EXISTS 
-(
-    SELECT 1
-    FROM CFCParty WITH (NOLOCK) CFCP
-    WHERE CFCP.PartyID = DT.PID
-      AND CFCP.PartyCategory = 'Initial'
-      AND EXISTS (
-          SELECT 1
-          FROM CFCMapping WITH (NOLOCK) CFCM
-          INNER JOIN CFCcase WITH (NOLOCK) CFCC ON CFCC.CFCCaseID = CFCM.CFCCaseID
-          WHERE CFCM.CFCPartyID = CFCP.ID
-            AND CFCC.CreatedDate >= CAST(GETDATE() AS DATE)
-            AND CFCC.CreatedDate < DATEADD(DAY, 1, CAST(GETDATE() AS DATE))
-      )
-)
-AND NOT EXISTS 
-(
-    SELECT 1
-    FROM CFCcaseException WITH (NOLOCK) CFCE
-    WHERE CFCE.PartyID = DT.PID
-      AND CFCE.CreatedDate >= CAST(GETDATE() AS DATE)
-      AND CFCE.CreatedDate < DATEADD(DAY, 1, CAST(GETDATE() AS DATE))
-);
+import javax.crypto.SecretKey;
+import javax.crypto.spec.SecretKeySpec;
+import java.io.Console;
+import java.io.FileInputStream;
+import java.io.FileOutputStream;
+import java.security.KeyStore;
 
-*****************************************************************************************************************
+public class UpdateAndReadJceksPassword {
+    public static void main(String[] args) {
+        try {
+            // File location
+            String keystorePath = "mykeystore.jceks";
 
+            // Use Console to get secure input
+            Console console = System.console();
+            if (console == null) {
+                System.err.println("No console available. Run from terminal.");
+                return;
+            }
 
-ACMS Case Ingestion Overview
-The ACMS (Application Case Management System) supports case ingestion through multiple mechanisms:
+            char[] keystorePassword = console.readPassword("Enter keystore password: ");
+            String alias = console.readLine("Enter alias name: ");
+            String secretPassword = new String(console.readPassword("Enter secret password to store: "));
 
-Linked Server
+            // Load or create JCEKS keystore
+            KeyStore keyStore = KeyStore.getInstance("JCEKS");
+            try (FileInputStream fis = new FileInputStream(keystorePath)) {
+                keyStore.load(fis, keystorePassword);
+            } catch (Exception e) {
+                System.out.println("Keystore not found, creating new one...");
+                keyStore.load(null, keystorePassword);
+            }
 
-File Feed
+            // Create secret key
+            SecretKey secretKey = new SecretKeySpec(secretPassword.getBytes(), "PBE");
+            KeyStore.SecretKeyEntry secretEntry = new KeyStore.SecretKeyEntry(secretKey);
+            KeyStore.ProtectionParameter protParam = new KeyStore.PasswordProtection(keystorePassword);
+            keyStore.setEntry(alias, secretEntry, protParam);
 
-Service Ingestion
+            // Save keystore
+            try (FileOutputStream fos = new FileOutputStream(keystorePath)) {
+                keyStore.store(fos, keystorePassword);
+            }
 
-Management of Cases (MOC)
-Ingestion Method: File Feed
+            System.out.println("Password stored successfully.");
 
-Validation Logic:
+            // Reading the password back
+            KeyStore.SecretKeyEntry readEntry = (KeyStore.SecretKeyEntry) keyStore.getEntry(alias, protParam);
+            SecretKey readKey = readEntry.getSecretKey();
+            String recoveredPassword = new String(readKey.getEncoded());
+            System.out.println("Recovered password from keystore: " + recoveredPassword);
 
-No mandatory field validation is enforced.
-
-The system verifies:
-
-Presence of both header and trailer records.
-
-The presence of 23 pipe (|) delimiters per line to ensure structural consistency.
-
-Processing Logic:
-
-Although fields are not validated as "mandatory" per se, the application logic expects data for certain critical fields.
-
-If any of these key fields are missing, the record is routed to Exception Cases and is not processed as a valid case.
-
-CSU Cases
-Ingestion Method: Linked Server
-
-Data Source: Fetched from predefined database views via the linked server.
-
-Processing Flow:
-
-Case ingestion is executed using a stored procedure that inserts the data into the ACMS application.
-
-No mandatory field validation is applied by the stored procedure.
-
-Observation:
-
-Analysis of incoming data from ART (presumably the source system) suggests that successful case creation depends on the presence of certain field values.
-
-These fields, while not enforced as mandatory in the logic, are practically necessary for case creation to proceed without errors.
-
-MSB Cases
-Ingestion Method: Linked Server
-
-Data Source: (Please complete — it seems the input was cut off here.)
-
-Let me know which view or source MSB cases pull from so I can complete this section.
-
-
-
-**************************************************************************************************
-
-
-
-A JCEKS file (Java Cryptography Extension KeyStore) is a keystore file format used in Java to store cryptographic keys, certificates, and passwords securely.
-
-It’s an alternative to the default Java KeyStore format (JKS) and is part of the Java Cryptography Extension (JCE).
-
-🧩 Why Use JCEKS Instead of JKS?
-JCEKS supports stronger encryption for protecting stored passwords and secret keys
-
-Unlike JKS, which is mainly for public/private key pairs and certificates, JCEKS also allows storage of symmetric keys and passwords more securely
-
-
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+    }
+}
