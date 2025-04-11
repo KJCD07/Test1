@@ -1,57 +1,87 @@
 import javax.crypto.SecretKey;
 import javax.crypto.spec.SecretKeySpec;
-import java.io.Console;
-import java.io.FileInputStream;
-import java.io.FileOutputStream;
+import java.io.*;
 import java.security.KeyStore;
+import java.util.Scanner;
 
-public class UpdateAndReadJceksPassword {
+public class JceksManager {
+
+    private static final String KEYSTORE_TYPE = "JCEKS";
+    private static final String SECRET_KEY_ALGORITHM = "PBE";
+
     public static void main(String[] args) {
+        Scanner scanner = new Scanner(System.in);
+
+        System.out.print("Enter keystore path (e.g., mykeystore.jceks): ");
+        String keystorePath = scanner.nextLine();
+
+        System.out.print("Enter keystore password: ");
+        char[] keystorePassword = scanner.nextLine().toCharArray();
+
+        System.out.print("Enter alias: ");
+        String alias = scanner.nextLine();
+
+        System.out.print("Choose operation (read/update): ");
+        String operation = scanner.nextLine().trim().toLowerCase();
+
         try {
-            // File location
-            String keystorePath = "mykeystore.jceks";
+            KeyStore keyStore = loadOrCreateKeyStore(keystorePath, keystorePassword);
 
-            // Use Console to get secure input
-            Console console = System.console();
-            if (console == null) {
-                System.err.println("No console available. Run from terminal.");
-                return;
+            if ("update".equals(operation)) {
+                System.out.print("Enter secret password to store: ");
+                String secretPassword = scanner.nextLine();
+                storeSecretKey(keyStore, keystorePath, alias, secretPassword, keystorePassword);
+                System.out.println("Secret stored successfully.");
+            } else if ("read".equals(operation)) {
+                readSecretKey(keyStore, alias, keystorePassword);
+            } else {
+                System.out.println("Invalid operation. Use 'read' or 'update'.");
             }
-
-            char[] keystorePassword = console.readPassword("Enter keystore password: ");
-            String alias = console.readLine("Enter alias name: ");
-            String secretPassword = new String(console.readPassword("Enter secret password to store: "));
-
-            // Load or create JCEKS keystore
-            KeyStore keyStore = KeyStore.getInstance("JCEKS");
-            try (FileInputStream fis = new FileInputStream(keystorePath)) {
-                keyStore.load(fis, keystorePassword);
-            } catch (Exception e) {
-                System.out.println("Keystore not found, creating new one...");
-                keyStore.load(null, keystorePassword);
-            }
-
-            // Create secret key
-            SecretKey secretKey = new SecretKeySpec(secretPassword.getBytes(), "PBE");
-            KeyStore.SecretKeyEntry secretEntry = new KeyStore.SecretKeyEntry(secretKey);
-            KeyStore.ProtectionParameter protParam = new KeyStore.PasswordProtection(keystorePassword);
-            keyStore.setEntry(alias, secretEntry, protParam);
-
-            // Save keystore
-            try (FileOutputStream fos = new FileOutputStream(keystorePath)) {
-                keyStore.store(fos, keystorePassword);
-            }
-
-            System.out.println("Password stored successfully.");
-
-            // Reading the password back
-            KeyStore.SecretKeyEntry readEntry = (KeyStore.SecretKeyEntry) keyStore.getEntry(alias, protParam);
-            SecretKey readKey = readEntry.getSecretKey();
-            String recoveredPassword = new String(readKey.getEncoded());
-            System.out.println("Recovered password from keystore: " + recoveredPassword);
 
         } catch (Exception e) {
             e.printStackTrace();
+        }
+    }
+
+    private static KeyStore loadOrCreateKeyStore(String path, char[] password) throws Exception {
+        KeyStore keyStore = KeyStore.getInstance(KEYSTORE_TYPE);
+        File ksFile = new File(path);
+
+        if (ksFile.exists()) {
+            try (FileInputStream fis = new FileInputStream(ksFile)) {
+                keyStore.load(fis, password);
+                System.out.println("Keystore loaded.");
+            }
+        } else {
+            keyStore.load(null, password);
+            System.out.println("Keystore not found. Creating new one.");
+        }
+
+        return keyStore;
+    }
+
+    private static void storeSecretKey(KeyStore keyStore, String path, String alias, String secret, char[] password) throws Exception {
+        SecretKey secretKey = new SecretKeySpec(secret.getBytes(), SECRET_KEY_ALGORITHM);
+        KeyStore.SecretKeyEntry entry = new KeyStore.SecretKeyEntry(secretKey);
+        KeyStore.PasswordProtection protection = new KeyStore.PasswordProtection(password);
+
+        keyStore.setEntry(alias, entry, protection);
+
+        try (FileOutputStream fos = new FileOutputStream(path)) {
+            keyStore.store(fos, password);
+        }
+    }
+
+    private static void readSecretKey(KeyStore keyStore, String alias, char[] password) throws Exception {
+        KeyStore.PasswordProtection protection = new KeyStore.PasswordProtection(password);
+        KeyStore.Entry entry = keyStore.getEntry(alias, protection);
+
+        if (entry instanceof KeyStore.SecretKeyEntry) {
+            SecretKey secretKey = ((KeyStore.SecretKeyEntry) entry).getSecretKey();
+            String recovered = new String(secretKey.getEncoded());
+            System.out.println("Recovered password: " + recovered);
+        } else {
+            System.out.println("No secret found for alias: " + alias);
         }
     }
 }
