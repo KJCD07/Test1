@@ -1,87 +1,52 @@
-import javax.crypto.SecretKey;
-import javax.crypto.spec.SecretKeySpec;
-import java.io.*;
-import java.security.KeyStore;
-import java.util.Scanner;
+using System;
+using System.Collections.Generic;
 
-public class JceksManager {
+class Program
+{
+    static void Main(string[] args)
+    {
+        List<string> names = new List<string>() { "Alice", "Bob", "Charlie" };
 
-    private static final String KEYSTORE_TYPE = "JCEKS";
-    private static final String SECRET_KEY_ALGORITHM = "PBE";
-
-    public static void main(String[] args) {
-        Scanner scanner = new Scanner(System.in);
-
-        System.out.print("Enter keystore path (e.g., mykeystore.jceks): ");
-        String keystorePath = scanner.nextLine();
-
-        System.out.print("Enter keystore password: ");
-        char[] keystorePassword = scanner.nextLine().toCharArray();
-
-        System.out.print("Enter alias: ");
-        String alias = scanner.nextLine();
-
-        System.out.print("Choose operation (read/update): ");
-        String operation = scanner.nextLine().trim().toLowerCase();
-
-        try {
-            KeyStore keyStore = loadOrCreateKeyStore(keystorePath, keystorePassword);
-
-            if ("update".equals(operation)) {
-                System.out.print("Enter secret password to store: ");
-                String secretPassword = scanner.nextLine();
-                storeSecretKey(keyStore, keystorePath, alias, secretPassword, keystorePassword);
-                System.out.println("Secret stored successfully.");
-            } else if ("read".equals(operation)) {
-                readSecretKey(keyStore, alias, keystorePassword);
-            } else {
-                System.out.println("Invalid operation. Use 'read' or 'update'.");
+        foreach (string name in names)
+        {
+            if (name == "Bob")
+            {
+                names.Remove(name);
             }
-
-        } catch (Exception e) {
-            e.printStackTrace();
-        }
-    }
-
-    private static KeyStore loadOrCreateKeyStore(String path, char[] password) throws Exception {
-        KeyStore keyStore = KeyStore.getInstance(KEYSTORE_TYPE);
-        File ksFile = new File(path);
-
-        if (ksFile.exists()) {
-            try (FileInputStream fis = new FileInputStream(ksFile)) {
-                keyStore.load(fis, password);
-                System.out.println("Keystore loaded.");
-            }
-        } else {
-            keyStore.load(null, password);
-            System.out.println("Keystore not found. Creating new one.");
         }
 
-        return keyStore;
-    }
-
-    private static void storeSecretKey(KeyStore keyStore, String path, String alias, String secret, char[] password) throws Exception {
-        SecretKey secretKey = new SecretKeySpec(secret.getBytes(), SECRET_KEY_ALGORITHM);
-        KeyStore.SecretKeyEntry entry = new KeyStore.SecretKeyEntry(secretKey);
-        KeyStore.PasswordProtection protection = new KeyStore.PasswordProtection(password);
-
-        keyStore.setEntry(alias, entry, protection);
-
-        try (FileOutputStream fos = new FileOutputStream(path)) {
-            keyStore.store(fos, password);
-        }
-    }
-
-    private static void readSecretKey(KeyStore keyStore, String alias, char[] password) throws Exception {
-        KeyStore.PasswordProtection protection = new KeyStore.PasswordProtection(password);
-        KeyStore.Entry entry = keyStore.getEntry(alias, protection);
-
-        if (entry instanceof KeyStore.SecretKeyEntry) {
-            SecretKey secretKey = ((KeyStore.SecretKeyEntry) entry).getSecretKey();
-            String recovered = new String(secretKey.getEncoded());
-            System.out.println("Recovered password: " + recovered);
-        } else {
-            System.out.println("No secret found for alias: " + alias);
+        Console.WriteLine("Names after removal:");
+        foreach (string name in names)
+        {
+            Console.WriteLine(name);
         }
     }
 }
+
+
+
+
+
+You're modifying a collection (List<string> names) while iterating over it using foreach.
+
+❗ This throws a InvalidOperationException at runtime:
+
+"Collection was modified; enumeration operation may not execute."
+
+
+How to Fix It
+Option 1: Iterate backwards using a for loop:
+
+for (int i = names.Count - 1; i >= 0; i--)
+{
+    if (names[i] == "Bob")
+    {
+        names.RemoveAt(i);
+    }
+}
+Option 2: Use RemoveAll:
+
+names.RemoveAll(name => name == "Bob");
+
+
+
