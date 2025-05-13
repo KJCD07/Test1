@@ -71,18 +71,90 @@ names.RemoveAll(name => name == "Bob");
 
 
 
+string message = null;
+Console.WriteLine("Message length is: " + message.Length);
+❗ Problem:
+You're accessing .Length on a null object, which will throw a NullReferenceException.
 
 
+*********************************************************************
 
 
+Use GC.Collect() Only for Debugging
+Avoid using GC.Collect() in production code — it forces collection and affects performance.
+
+*******************************************************************
+
+2. Avoid Event Handler Leaks
+Event handlers can keep subscribers alive longer than needed.
+
+❌ Don’t:
+
+publisher.SomeEvent += subscriber.Method;
+✅ Do:
+Unsubscribe when no longer needed:
 
 
+publisher.SomeEvent -= subscriber.Method;
 
 
+**********************************************************************************
+
+Dispose Unmanaged Resources Properly
+Always call Dispose() on objects like:
+
+SqlConnection, Stream, FileStream, HttpClient, etc.
+
+🔧 Solution:
+Use using blocks or implement IDisposable.
 
 
+using (var conn = new SqlConnection("..."))
+{
+    conn.Open();
+    // Do work
+}
+*****************************************************************************
 
 
+ How do you define endpoints in ASP.NET Core?
+✅ Answer:
+Endpoints are defined using routing in Startup.cs or Program.cs.
+
+Example:
+
+
+app.MapControllerRoute(
+    name: "default",
+    pattern: "api/{controller=Home}/{action=Index}/{id?}");
+Or in Minimal API (ASP.NET Core 6+):
+
+
+app.MapGet("/api/hello", () => "Hello World!");
+
+*****************************************************************************************
+
+1. Bug: Division by Zero
+
+int a = 10;
+int b = 0;
+int result = a / b;
+Console.WriteLine(result);
+❌ Problem:
+This throws a DivideByZeroException
+
+
+****************************************************************************
+
+string input = "yes";
+if (input == "YES")
+{
+    Console.WriteLine("Confirmed");
+}
+❌ Problem:
+C# string comparison is case-sensitive by default.
+
+*********************************************************************
 
 
 
