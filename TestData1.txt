@@ -50,3 +50,41 @@ names.RemoveAll(name => name == "Bob");
 
 
 
+
+*******************
+
+ static void Main(string[] args)
+    {
+        List<string> names = new List<string>() { "Alice", "Bob", "Charlie" };
+
+        names.RemoveAll(name => name == "Bob");
+
+        Console.WriteLine("Names after removal:");
+        foreach (string name in names)
+        {
+            Console.WriteLine(name);
+        }
+    }
+
+*********************************************************
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
