@@ -1,0 +1,286 @@
+
+C# Interview Questions with Code Examples
+
+1. What is the difference between `ref` and `out` keywords in C#?
+Answer:
+- `ref` requires initialization before passing.
+- `out` does not require initialization but must be assigned inside the method.
+
+Example:
+void RefExample(ref int x) {
+    x += 10;
+}
+void OutExample(out int y) {
+    y = 100;
+}
+int a = 5;
+RefExample(ref a); // a becomes 15
+int b;
+OutExample(out b); // b becomes 100
+
+2. What is the difference between abstract class and interface?
+Answer:
+- Abstract class can have implementations.
+- Interface contains signatures (prior to C# 8).
+
+Example:
+abstract class Animal {
+    public abstract void Speak();
+    public void Sleep() => Console.WriteLine("Sleeping...");
+}
+interface IMovable {
+    void Move();
+}
+class Dog : Animal, IMovable {
+    public override void Speak() => Console.WriteLine("Bark");
+    public void Move() => Console.WriteLine("Dog runs");
+}
+
+3. How do you reverse a string in C#?
+string Reverse(string input) {
+    char[] arr = input.ToCharArray();
+    Array.Reverse(arr);
+    return new string(arr);
+}
+
+4. Factorial using recursion:
+int Factorial(int n) {
+    if (n <= 1) return 1;
+    return n * Factorial(n - 1);
+}
+
+5. Nullable type:
+int? age = null;
+if (age.HasValue)
+    Console.WriteLine(age.Value);
+
+6. Singleton Pattern:
+public class Singleton {
+    private static readonly Singleton _instance = new Singleton();
+    private Singleton() { }
+    public static Singleton Instance => _instance;
+}
+
+7. LINQ example:
+var numbers = new[] { 1, 2, 3, 4, 5 };
+var evens = numbers.Where(n => n % 2 == 0);
+
+8. Palindrome check:
+bool IsPalindrome(string input) {
+    string reversed = new string(input.Reverse().ToArray());
+    return input.Equals(reversed, StringComparison.OrdinalIgnoreCase);
+}
+
+9. == vs .Equals():
+string a = "test";
+string b = "test";
+Console.WriteLine(a == b); // True
+Console.WriteLine(a.Equals(b)); // True
+
+10. Character count:
+void CountCharacters(string input) {
+    var dict = new Dictionary<char, int>();
+    foreach (var ch in input) {
+        if (dict.ContainsKey(ch))
+            dict[ch]++;
+        else
+            dict[ch] = 1;
+    }
+}
+
+11. Delegate example:
+delegate void Greet(string name);
+void SayHello(string name) => Console.WriteLine($"Hello, {name}!");
+Greet greet = SayHello;
+greet("Alice");
+
+12. Event example:
+class Alarm {
+    public event Action OnAlarm;
+    public void Trigger() {
+        Console.WriteLine("Alarm ringing!");
+        OnAlarm?.Invoke();
+    }
+}
+
+13. IEnumerable<T>:
+class MyCollection : IEnumerable<int> {
+    private int[] data = { 1, 2, 3 };
+    public IEnumerator<int> GetEnumerator() {
+        foreach (var item in data)
+            yield return item;
+    }
+    IEnumerator IEnumerable.GetEnumerator() => GetEnumerator();
+}
+
+14. try-catch-finally:
+try {
+    int x = int.Parse("abc");
+} catch (FormatException ex) {
+    Console.WriteLine("Format error");
+} finally {
+    Console.WriteLine("Cleanup");
+}
+
+15. Second largest number:
+int SecondLargest(int[] nums) {
+    int first = int.MinValue, second = int.MinValue;
+    foreach (var n in nums) {
+        if (n > first) {
+            second = first;
+            first = n;
+        } else if (n > second && n != first) {
+            second = n;
+        }
+    }
+    return second;
+}
+
+16. Static class:
+static class MathHelper {
+    public static int Square(int x) => x * x;
+}
+
+17. Boxing & Unboxing:
+int num = 123;
+object boxed = num;
+int unboxed = (int)boxed;
+
+18. Anagram check:
+bool AreAnagrams(string s1, string s2) {
+    return string.Concat(s1.OrderBy(c => c)) == string.Concat(s2.OrderBy(c => c));
+}
+
+19. Params keyword:
+int Sum(params int[] numbers) => numbers.Sum();
+
+20. async/await:
+async Task<string> GetDataAsync() {
+    await Task.Delay(1000);
+    return "Data received";
+}
+
+Advanced Questions:
+21. Overloading vs Overriding:
+class Calculator {
+    public int Add(int a, int b) => a + b;
+    public double Add(double a, double b) => a + b;
+}
+class Base {
+    public virtual void Show() => Console.WriteLine("Base");
+}
+class Derived : Base {
+    public override void Show() => Console.WriteLine("Derived");
+}
+
+22. Remove duplicates:
+List<int> RemoveDuplicates(List<int> input) {
+    return input.Distinct().ToList();
+}
+
+23. Interface example:
+interface IAnimal {
+    void Speak();
+}
+class Cat : IAnimal {
+    public void Speak() => Console.WriteLine("Meow");
+}
+
+24. Swap numbers:
+int a = 10, b = 20;
+a = a + b;
+b = a - b;
+a = a - b;
+
+25. Dictionary usage:
+var dict = new Dictionary<string, int> {
+    { "apple", 1 }, { "banana", 2 }
+};
+
+26. Custom Exception:
+class MyCustomException : Exception {
+    public MyCustomException(string message) : base(message) { }
+}
+
+27. Tuple example:
+var result = Tuple.Create("John", 30);
+(string name, int age) = ("Alice", 25);
+
+28. Fibonacci series:
+void Fibonacci(int n) {
+    int a = 0, b = 1;
+    for (int i = 0; i < n; i++) {
+        Console.Write(a + " ");
+        int temp = a;
+        a = b;
+        b = temp + b;
+    }
+}
+
+29. readonly vs const:
+public const int ConstVal = 10;
+public readonly int ReadonlyVal;
+
+30. LINQ filter:
+var evenNumbers = numbers.Where(n => n % 2 == 0).ToList();
+
+Multithreading and Patterns:
+31. Thread example:
+Thread t = new Thread(PrintNumbers);
+t.Start();
+
+32. Task vs Thread:
+await Task.Run(() => Console.WriteLine("Running async task"));
+
+33. Dependency Injection:
+class Controller {
+    private readonly IService _service;
+    public Controller(IService service) {
+        _service = service;
+    }
+    public void Process() => _service.Serve();
+}
+
+34. File I/O:
+File.WriteAllText("output.txt", "Hello");
+string content = File.ReadAllText("output.txt");
+
+35. Factory Pattern:
+class ShapeFactory {
+    public static IShape GetShape(string type) {
+        return type switch {
+            "circle" => new Circle(),
+            _ => throw new Exception("Unknown shape")
+        };
+    }
+}
+
+36. LINQ GroupBy:
+var grouped = words.GroupBy(w => w)
+                   .Select(g => new { Word = g.Key, Count = g.Count() });
+
+37. Singleton:
+public class Singleton {
+    private static readonly Singleton _instance = new Singleton();
+    private Singleton() { }
+    public static Singleton Instance => _instance;
+}
+
+38. lock example:
+lock (_lock) {
+    _count++;
+}
+
+39. Top 2 highest numbers:
+var topTwo = numbers.OrderByDescending(x => x).Take(2);
+
+40. Repository Pattern:
+interface IProductRepository {
+    IEnumerable<string> GetAll();
+}
+class ProductService {
+    private readonly IProductRepository _repo;
+    public ProductService(IProductRepository repo) {
+        _repo = repo;
+    }
+}
