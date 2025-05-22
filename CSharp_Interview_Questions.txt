@@ -353,6 +353,53 @@ JOIN sys.dm_db_missing_index_details mid ON mig.index_handle = mid.index_handle
 ORDER BY migs.user_seeks DESC;
 
 
+public class DataService
+{
+    public async Task<string> GetData()
+    {
+        var data = GetFromDatabase();
+        return $"Data received: {data}";
+    }
+
+    private async Task<string> GetFromDatabase()
+    {
+        await Task.Delay(1000); // Simulating delay
+        return "User Info";
+    }
+}
+
+
+
+
+
+❌ What's the Bug?
+The method GetData() is marked async, but it does not await the call to GetFromDatabase().
+
+As a result, the data variable gets a Task<string>, not a string.
+
+✅ Corrected Code:
+csharp
+Copy
+Edit
+public class DataService
+{
+    public async Task<string> GetData()
+    {
+        var data = await GetFromDatabase(); // Fix: added await
+        return $"Data received: {data}";
+    }
+
+    private async Task<string> GetFromDatabase()
+    {
+        await Task.Delay(1000); // Sim
+
+
+
+
+
+
+
+**************************************************************************************
 
 
 
