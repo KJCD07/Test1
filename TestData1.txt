@@ -160,3 +160,52 @@ C# string comparison is case-sensitive by default.
 
 
 
+
+
+
+
+
+
+
+<property>
+  <name>hive.exec.dynamic.partition</name>
+  <value>true</value>
+</property>
+<property>
+  <name>hive.exec.dynamic.partition.mode</name>
+  <value>nonstrict</value>
+</property>
+<property>
+  <name>hive.exec.max.dynamic.partitions</name>
+  <value>6000</value>
+</property>
+<property>
+  <name>hive.exec.max.dynamic.partitions.pernode</name>
+  <value>3000</value>
+</property>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
