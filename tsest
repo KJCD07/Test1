@@ -1,0 +1,164 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Conditional Data Flow Chart</title>
+  <style>
+    body {
+      font-family: 'Segoe UI', sans-serif;
+      background: linear-gradient(to bottom, #e3f2fd, #ffffff);
+      margin: 0;
+      padding: 20px;
+      text-align: center;
+    }
+    h1 {
+      color: #1565c0;
+      margin-bottom: 40px;
+    }
+    .flowchart {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 30px;
+    }
+    .step {
+      background: #ffffff;
+      padding: 20px;
+      border-radius: 20px;
+      box-shadow: 0 8px 20px rgba(0, 0, 0, 0.1);
+      width: 280px;
+      position: relative;
+      opacity: 0.6;
+      transition: all 0.5s ease;
+    }
+    .step h3 {
+      margin-bottom: 10px;
+      color: #2c3e50;
+    }
+    .step p {
+      margin: 0;
+    }
+    .sql-tag {
+      font-size: 12px;
+      color: #607d8b;
+      font-style: italic;
+      margin-top: 8px;
+    }
+    .arrow {
+      font-size: 32px;
+      animation: float 2s infinite;
+      color: #1976d2;
+    }
+    .highlight {
+      background-color: #e0f7fa;
+      border: 3px solid #00bcd4;
+      opacity: 1;
+      transform: scale(1.05);
+    }
+    .error-highlight {
+      background-color: #ffebee;
+      border: 3px solid #f44336;
+      opacity: 1;
+      transform: scale(1.05);
+    }
+    .split-flow {
+      display: flex;
+      justify-content: space-around;
+      width: 100%;
+      max-width: 700px;
+    }
+    @keyframes float {
+      0% { transform: translateY(0px); }
+      50% { transform: translateY(-5px); }
+      100% { transform: translateY(0px); }
+    }
+    @keyframes pulseTable {
+      0% { transform: scale(1); opacity: 0.7; }
+      50% { transform: scale(1.1); opacity: 1; }
+      100% { transform: scale(1); opacity: 0.7; }
+    }
+  </style>
+</head>
+<body>
+  <h1>Interactive Conditional Data Flow</h1>
+
+  <div class="flowchart">
+    <div class="step" id="step1">
+      <h3>Step 1: Ingestion File</h3>
+      <p>📄 case_data.txt</p>
+      <div class="sql-tag">Loaded from shared folder</div>
+    </div>
+    <div class="arrow">⬇️</div>
+    <div class="step" id="fetchStep">
+      <h3>Fetching & Processing</h3>
+      <p>📥 File content is being read</p>
+      <div class="sql-tag">Processing rows before validation</div>
+    </div>
+    <div class="arrow">⬇️</div>
+    <div class="step" id="step2">
+      <h3>Step 2: Validation</h3>
+      <p>🛠️ SQL: usp_ValidateInsertCFCCase</p>
+      <div class="sql-tag">Validation logic executes</div>
+    </div>
+    <div class="arrow">⬇️</div>
+    <div class="sql-tag" style="margin: -20px 0 10px; color: #455a64; font-weight: bold;">IF Valid → Step 3 | ELSE → Step 4</div>
+    <div class="split-flow">
+      <div class="step" id="step3">
+        <h3>Step 3: Valid Data</h3>
+        <p>✅ Inserted to CFCCase</p>
+        <div class="sql-tag">Includes Case Number</div>
+      </div>
+      <div class="step" id="step4">
+        <h3>Step 4: Invalid Data</h3>
+        <p>❌ Inserted into CFCException</p>
+        <p>🔎 Reason fetched via SQL JOIN from ReasonTable</p>
+        <img src="https://cdn-icons-png.flaticon.com/512/888/888879.png" alt="Reason Table" style="margin-top:10px;width:60px;height:60px;animation: pulseTable 1.5s infinite;">
+        <div class="sql-tag">SELECT r.Reason FROM CFCException e JOIN ReasonTable r ON e.Code = r.Code</div>
+        <div class="sql-tag">INSERT INTO CFCException (RecordId, Reason) ...</div>
+        <p style="margin-top:10px; font-size: 13px; color: #37474f; animation: pulseTable 1.5s infinite;">↘️ Error Data Flowing from Reason Table...</p>
+      </div>
+    </div>
+   </div>
+
+  <defs>
+    <marker id="arrow" markerWidth="10" markerHeight="10" refX="0" refY="3" orient="auto" markerUnits="strokeWidth">
+      <path d="M0,0 L0,6 L9,3 z" fill="#1976d2" />
+    </marker>
+  </defs>
+  <line x1="0" y1="0" x2="60" y2="20" stroke="#1976d2" stroke-width="2" marker-end="url(#arrow)"/>
+</svg>
+  <div class="sql-tag" style="margin-top: 6px;">r.Reason FROM ReasonTable</div>
+  <div style="margin-top: 10px; font-size: 14px; color: #37474f;">⬅️ Data sent to Step 4</div>
+</div>
+      <div class="sql-tag">Used for JOIN on CFCException.Code</div>
+    </div>
+  </div>
+
+  <script>
+    const step1 = document.getElementById('step1');
+    const fetchStep = document.getElementById('fetchStep');
+    const step2 = document.getElementById('step2');
+    const step3 = document.getElementById('step3');
+    const step4 = document.getElementById('step4');
+
+    function animateFlow() {
+      const isValid = Math.random() > 0.5;
+      [step1, fetchStep, step2, step3, step4].forEach(step => step.classList.remove('highlight', 'error-highlight'));
+
+      setTimeout(() => step1.classList.add('highlight'), 300);
+      setTimeout(() => fetchStep.classList.add('highlight'), 900);
+      setTimeout(() => step2.classList.add('highlight'), 1300);
+      setTimeout(() => {
+        if (isValid) {
+          step3.classList.add('highlight');
+        } else {
+          step4.classList.add('error-highlight');
+        }
+      }, 1600);
+    }
+
+    setInterval(animateFlow, 6000);
+  </script>
+</body>
+</html>
