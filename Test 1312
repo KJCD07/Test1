@@ -1,0 +1,35 @@
+Dear Team,
+
+Moving forward, I kindly request that we perform the following checks on a daily basis to ensure there are no impediments for the development team. This proactive approach will help us maintain smooth operations across environments.
+
+Daily Checklist:
+
+Verify Autosys Job Status
+– Run a few representative jobs (batch/exe/SSIS/SP) in each instance to confirm smooth execution.
+
+Verify Linked Server Connectivity
+– Check connectivity for both MSB and ACMS across all environments.
+
+Verify Shared Path Access
+– Ensure shared locations are accessible in all environments.
+
+Verify SSRS Reports Accessibility
+– Confirm SSRS reports are accessible without any issues.
+
+To streamline ownership, please refer to the weekly rotation below for responsibility:
+
+First Week of the Month: Mr. X
+
+Second Week of the Month: Mr. Y
+
+Third Week of the Month: Mr. CCC
+
+Fourth Week of the Month: Mr. KK
+
+In the event the assigned person is unavailable on a given day, the individual scheduled for the following week will take responsibility for that day's check.
+Please note, there will be no changes to this roster unless explicitly communicated by Mr. XXXX and Mr. YYYYY.
+
+📌 Action Item:
+Kindly create a personal task/reminder to ensure this execution is carried out without fail during your assigned week.
+
+Let’s continue supporting our development team by being diligent and collaborative in these checks. Your cooperation is greatly appreciated.
