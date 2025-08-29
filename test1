@@ -51,3 +51,71 @@ END
 
 CLOSE cur;
 DEALLOCATE cur;
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+@echo off
+setlocal enabledelayedexpansion
+
+:: Step 1: Run SQL query and get the single row with pipe-delimited paths
+set DbServer=YourServerName
+set DbName=YourDatabase
+set OutputFile=C:\Temp\allpaths.txt
+
+sqlcmd -S %DbServer% -d %DbName% -E -Q "SET NOCOUNT ON; SELECT Paths FROM dbo.FilePathData" -h -1 -W > "%OutputFile%"
+
+:: Step 2: Read the line into a variable
+set /p Line=<"%OutputFile%"
+
+:: Step 3: Replace | with spaces so we can loop
+set Line=%Line:|= %
+
+:: Step 4: Loop through each folder
+for %%F in (%Line%) do (
+    echo Processing folder: %%F
+    if exist "%%F" (
+        :: Example: delete files older than 30 days
+        forfiles /p "%%F" /s /m *.* /d -30 /c "cmd /c del @file"
+    ) else (
+        echo Folder does not exist: %%F
+    )
+)
+
+echo Done.
+endlocal
+
