@@ -1,0 +1,53 @@
+
+
+DECLARE @FolderPath NVARCHAR(500);
+DECLARE @Command NVARCHAR(1000);
+DECLARE @RowCount INT;
+
+-- Count rows in the source table
+SELECT @RowCount = COUNT(*) FROM TableB;
+
+-- If no rows, exit early
+IF @RowCount = 0
+BEGIN
+    PRINT 'No rows found in TableB. Nothing to process.';
+    RETURN;
+END
+
+-- Cursor definition
+DECLARE cur CURSOR LOCAL FAST_FORWARD FOR
+    SELECT LTRIM(RTRIM(Column1))  -- trim spaces in paths
+    FROM TableB;
+
+OPEN cur;
+FETCH NEXT FROM cur INTO @FolderPath;
+
+WHILE @@FETCH_STATUS = 0
+BEGIN
+    PRINT 'Processing folder: ' + @FolderPath;
+
+    -- Step A: Capture today's files into temp table
+    IF OBJECT_ID('tempdb..#Output') IS NOT NULL
+        DROP TABLE #Output;
+
+    CREATE TABLE #Output (Line NVARCHAR(500));
+
+    SET @Command = 'cmd /c forfiles /p "' + @FolderPath + '" /s /m *.* /d 0 /c "cmd /c echo @file"';
+    INSERT INTO #Output
+    EXEC xp_cmdshell @Command;
+
+    -- Step B: Insert found files into log (skip null/error lines)
+    INSERT INTO dbo.DeletedFilesLog (FolderPath, FileName)
+    SELECT @FolderPath, Line
+    FROM #Output
+   where Line IS NOT NULL
+    -- Step C: Delete today's files
+    SET @Command = 'cmd /c forfiles /p "' + @FolderPath + '" /s /m *.* /d 0 /c "cmd /c del @file"';
+    EXEC xp_cmdshell @Command;
+
+    -- Next row
+    FETCH NEXT FROM cur INTO @FolderPath;
+END
+
+CLOSE cur;
+DEALLOCATE cur;
